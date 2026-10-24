@@ -8,5 +8,13 @@
     "stop": 80162.17991071429,
     "tp1": 78790.48013392856,
     "tp2": 78516.14017857143
+  },
+  "BTCUSD|New York Low Sweep|LONG|2026-10-24T16:30:00+00:00": {
+    "sent_at": "2026-10-24T16:56:52.030081+00:00",
+    "symbol": "BTCUSD",
+    "setup": "New York Low Sweep",
+    "direction": "LONG",
+    "entry": 79777.6484375,
+    "current_price": 80135.3515625
   }
 }
