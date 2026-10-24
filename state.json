@@ -1,1 +1,12 @@
-{}
+{
+  "BTCUSD|New York Breakout|SHORT|2026-10-24T15:00:00+00:00": {
+    "sent_at": "2026-10-24T15:15:36.179324+00:00",
+    "symbol": "BTCUSD",
+    "setup": "New York Breakout",
+    "direction": "SHORT",
+    "entry": 79613.5,
+    "stop": 80162.17991071429,
+    "tp1": 78790.48013392856,
+    "tp2": 78516.14017857143
+  }
+}
