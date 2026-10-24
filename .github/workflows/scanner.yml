@@ -2,7 +2,8 @@ name: Session Market Scanner
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    # Check every 5 minutes
+    - cron: "*/5 * * * *"
 
   workflow_dispatch:
 
