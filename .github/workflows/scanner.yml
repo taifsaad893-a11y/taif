@@ -2,7 +2,8 @@ name: Session Market Scanner
 
 on:
   schedule:
-    # Check every 5 minutes
+    # GitHub starts the workflow every 5 minutes.
+    # agent.py scans every minute inside each run.
     - cron: "*/5 * * * *"
 
   workflow_dispatch:
@@ -10,9 +11,14 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: session-market-scanner
+  cancel-in-progress: false
+
 jobs:
   scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 7
 
     steps:
 
@@ -33,10 +39,16 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+          # Scan once every minute inside this workflow run
+          LOOP_SCANS: "5"
+          SCAN_INTERVAL_SECONDS: "60"
+
         run: |
           python agent.py
 
       - name: Save scanner state
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -46,6 +58,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No state changes"
           else
-            git commit -m "Update scanner state"
+            git commit -m "Update scanner state [skip ci]"
+            git pull --rebase
             git push
           fi
