@@ -17,8 +17,34 @@
       "direction": "LONG",
       "entry": 79777.6484375,
       "current_price": 80135.3515625
+    },
+    "BTCUSD|London Low Sweep|LONG|2026-10-24T18:45:00+00:00": {
+      "sent_at": "2026-10-24T19:06:54.207904+00:00",
+      "symbol": "BTCUSD",
+      "setup": "London Low Sweep",
+      "direction": "LONG",
+      "entry": 80430.6171875,
+      "current_price": 80414.6875,
+      "entry_valid": true
     }
   },
-  "trades": {},
+  "trades": {
+    "BTCUSD": {
+      "status": "OPEN",
+      "symbol": "BTCUSD",
+      "direction": "LONG",
+      "setup": "London Low Sweep",
+      "entry_reference": 80430.6171875,
+      "actual_entry_reference": 80414.6875,
+      "zone_low": 80407.76791294642,
+      "zone_high": 80453.46646205358,
+      "stop": 80213.61671316964,
+      "tp1": 80756.11789899554,
+      "tp2": 80864.61813616072,
+      "tp1_hit": false,
+      "opened_at": "2026-10-24T19:06:54.207928+00:00",
+      "signal_candle": "2026-10-24T18:45:00+00:00"
+    }
+  },
   "last_closed_trade": {}
 }
