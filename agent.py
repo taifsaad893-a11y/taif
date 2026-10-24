@@ -1,10 +1,11 @@
 import os
 import json
+import math
+import time
 import requests
 import yfinance as yf
 import pandas as pd
 
-from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 
@@ -31,32 +32,108 @@ MARKETS = {
 }
 
 TIMEFRAME = "15m"
-PERIOD = "5d"
 
 ATR_PERIOD = 14
 MIN_RR = 1.5
 
-# ORIGINAL STRATEGY SETTINGS — UNCHANGED
-BREAK_BUFFER_ATR = 0.08
+# =========================================================
+# SCORE
+# =========================================================
+
+A_SCORE = 7.5
+B_SCORE = 6.0
+
+
+# =========================================================
+# 15M SETUP SETTINGS
+# =========================================================
+
+BREAK_BUFFER_ATR = 0.05
+SWEEP_BUFFER_ATR = 0.02
 SL_BUFFER_ATR = 0.15
 
-# Alert / entry-zone setting only
-ENTRY_ZONE_ATR = 0.10
-
-MAX_CANDLE_AGE_MINUTES = 45
-
-STATE_FILE = "state.json"
-
-LONDON_TZ = ZoneInfo("Europe/London")
-NY_TZ = ZoneInfo("America/New_York")
-BAGHDAD_TZ = ZoneInfo("Asia/Baghdad")
+ENTRY_BACK_ATR = 0.12
+ENTRY_FRONT_ATR = 0.04
 
 
 # =========================================================
-# TELEGRAM
+# TIMING
 # =========================================================
 
-def send_telegram(message):
+# ENTER NOW only during first 2 minutes after 15m candle closes.
+MAX_ENTER_AGE_SECONDS = 120
+
+# If direct entry is missed, keep watching setup for a retest.
+WATCH_EXPIRY_MINUTES = 60
+
+# Small confirmation after retest.
+RETEST_CONFIRM_ATR = 0.05
+
+# Don't chase after retest confirmation.
+MAX_RETEST_CHASE_R = 0.25
+
+
+# =========================================================
+# HIGHER TIMEFRAME
+# =========================================================
+
+# 1H / 4H are only light context.
+HTF_ZONE_DISTANCE_ATR_1H = 0.45
+
+
+# =========================================================
+# SCANNER LOOP
+# =========================================================
+
+SCAN_INTERVAL_SECONDS = int(
+    os.environ.get("SCAN_INTERVAL_SECONDS", "60")
+)
+
+LOOP_SCANS = int(
+    os.environ.get("LOOP_SCANS", "5")
+)
+
+STATE_FILE = os.environ.get(
+    "STATE_FILE",
+    "state.json",
+)
+
+BAGHDAD = ZoneInfo("Asia/Baghdad")
+
+
+# =========================================================
+# HELPERS
+# =========================================================
+
+def now_utc():
+    return pd.Timestamp.now(tz="UTC")
+
+
+def stamp(value):
+    t = pd.Timestamp(value)
+
+    if t.tzinfo is None:
+        return t.tz_localize("UTC")
+
+    return t.tz_convert("UTC")
+
+
+def fmt(x):
+    if x is None:
+        return "-"
+
+    x = float(x)
+
+    if abs(x) >= 1000:
+        return f"{x:,.2f}"
+
+    if abs(x) >= 100:
+        return f"{x:.2f}"
+
+    return f"{x:.4f}"
+
+
+def send_telegram(text):
     url = (
         f"https://api.telegram.org/"
         f"bot{TELEGRAM_BOT_TOKEN}/sendMessage"
@@ -66,9 +143,10 @@ def send_telegram(message):
         url,
         json={
             "chat_id": TELEGRAM_CHAT_ID,
-            "text": message,
+            "text": text,
+            "disable_web_page_preview": True,
         },
-        timeout=20,
+        timeout=25,
     )
 
     response.raise_for_status()
@@ -80,1364 +158,2209 @@ def send_telegram(message):
 
 def default_state():
     return {
-        "signals": {},
-        "trades": {},
-        "last_closed_trade": {},
+        "last_signal": {},
+        "watch_setup": {},
+        "active_trade": {},
+        "closed": [],
     }
 
 
 def load_state():
     try:
-        with open(STATE_FILE, "r") as f:
-            raw = json.load(f)
+        with open(
+            STATE_FILE,
+            "r",
+            encoding="utf-8",
+        ) as f:
+            st = json.load(f)
 
-        # New state format
-        if (
-            isinstance(raw, dict)
-            and "signals" in raw
-            and "trades" in raw
-        ):
-            raw.setdefault("last_closed_trade", {})
-            return raw
+        if not isinstance(st, dict):
+            return default_state()
 
-        # Automatically migrate old state.json
-        # so previous signal IDs are not lost.
-        if isinstance(raw, dict):
-            return {
-                "signals": raw,
-                "trades": {},
-                "last_closed_trade": {},
-            }
+    except (
+        FileNotFoundError,
+        json.JSONDecodeError,
+    ):
+        return default_state()
 
-    except Exception:
-        pass
+    st.setdefault("last_signal", {})
+    st.setdefault("watch_setup", {})
+    st.setdefault("active_trade", {})
+    st.setdefault("closed", [])
 
-    return default_state()
+    return st
 
 
-def save_state(state):
-    with open(STATE_FILE, "w") as f:
+def save_state(st):
+    temp_file = STATE_FILE + ".tmp"
+
+    with open(
+        temp_file,
+        "w",
+        encoding="utf-8",
+    ) as f:
         json.dump(
-            state,
+            st,
             f,
+            ensure_ascii=False,
             indent=2,
         )
 
-
-def signal_id(
-    symbol,
-    setup,
-    direction,
-    candle_time,
-):
-    return (
-        f"{symbol}|"
-        f"{setup}|"
-        f"{direction}|"
-        f"{candle_time.isoformat()}"
+    os.replace(
+        temp_file,
+        STATE_FILE,
     )
 
 
 # =========================================================
-# MARKET DATA
+# MARKET HOURS
 # =========================================================
 
-def get_data(ticker):
-    df = yf.download(
-        ticker,
-        period=PERIOD,
-        interval=TIMEFRAME,
-        progress=False,
-        auto_adjust=False,
+def market_allowed(cfg, now):
+    if not cfg["weekdays_only"]:
+        return True
+
+    return now.weekday() < 5
+
+
+# =========================================================
+# YAHOO DATA
+# =========================================================
+
+def normalize_yf(df):
+    if df is None or df.empty:
+        raise RuntimeError(
+            "Empty market data"
+        )
+
+    if isinstance(
+        df.columns,
+        pd.MultiIndex,
+    ):
+        df.columns = [
+            column[0]
+            for column in df.columns
+        ]
+
+    df = df.rename(
+        columns={
+            "Open": "o",
+            "High": "h",
+            "Low": "l",
+            "Close": "c",
+            "Volume": "v",
+        }
     )
-
-    if df.empty:
-        return None
-
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.get_level_values(0)
 
     required = [
-        "Open",
-        "High",
-        "Low",
-        "Close",
-        "Volume",
+        "o",
+        "h",
+        "l",
+        "c",
+        "v",
     ]
 
-    for column in required:
-        if column not in df.columns:
-            return None
-
-    df = df[required].copy()
-
-    df.dropna(
-        subset=[
-            "Open",
-            "High",
-            "Low",
-            "Close",
-        ],
-        inplace=True,
+    df = (
+        df[required]
+        .dropna(
+            subset=[
+                "o",
+                "h",
+                "l",
+                "c",
+            ]
+        )
+        .copy()
     )
 
     if df.index.tz is None:
-        df.index = df.index.tz_localize("UTC")
+        df.index = pd.to_datetime(
+            df.index,
+            utc=True,
+        )
     else:
-        df.index = df.index.tz_convert("UTC")
+        df.index = (
+            pd.to_datetime(df.index)
+            .tz_convert("UTC")
+        )
 
-    return df
-
-
-# =========================================================
-# CLOSED CANDLES
-# =========================================================
-
-def remove_active_candle(df):
-    if df is None or df.empty:
-        return df
-
-    now = pd.Timestamp.now(tz="UTC")
-    candle_duration = pd.Timedelta(minutes=15)
-
-    mask = (
-        df.index + candle_duration
-        <= now
+    df["v"] = (
+        pd.to_numeric(
+            df["v"],
+            errors="coerce",
+        )
+        .fillna(0.0)
     )
 
-    return df[mask].copy()
+    return df.sort_index()
 
 
-# =========================================================
-# FRESHNESS
-# =========================================================
-
-def candle_is_fresh(candle_time):
-    now = datetime.now(timezone.utc)
-
-    candle_close_time = (
-        candle_time
-        + pd.Timedelta(minutes=15)
-    )
-
-    age = (
-        now
-        - candle_close_time.to_pydatetime()
-    )
-
-    age_minutes = (
-        age.total_seconds()
-        / 60
-    )
-
-    return (
-        0
-        <= age_minutes
-        <= MAX_CANDLE_AGE_MINUTES
-    )
-
-
-# =========================================================
-# WEEKDAY FILTER
-# =========================================================
-
-def market_allowed_today(weekdays_only):
-    if not weekdays_only:
-        return True
-
-    weekday = datetime.now(
-        timezone.utc
-    ).weekday()
-
-    return weekday <= 4
-
-
-# =========================================================
-# ATR
-# =========================================================
-
-def calculate_atr(
+def closed_only(
     df,
-    period=14,
+    minutes,
 ):
-    high_low = (
-        df["High"]
-        - df["Low"]
+    now = now_utc()
+
+    candle_end = (
+        df.index
+        + pd.Timedelta(
+            minutes=minutes
+        )
     )
 
-    high_close = abs(
-        df["High"]
-        - df["Close"].shift()
+    return df[
+        candle_end <= now
+    ].copy()
+
+
+# =========================================================
+# GET FRAMES
+# =========================================================
+
+def get_frames(ticker):
+
+    # -------------------------
+    # 15M
+    # -------------------------
+
+    d15 = yf.download(
+        ticker,
+        period="5d",
+        interval="15m",
+        progress=False,
+        auto_adjust=False,
+        threads=False,
     )
 
-    low_close = abs(
-        df["Low"]
-        - df["Close"].shift()
+    d15 = normalize_yf(d15)
+
+    d15 = closed_only(
+        d15,
+        15,
     )
 
-    ranges = pd.concat(
+    # -------------------------
+    # 1H
+    # -------------------------
+
+    d1 = yf.download(
+        ticker,
+        period="60d",
+        interval="1h",
+        progress=False,
+        auto_adjust=False,
+        threads=False,
+    )
+
+    d1 = normalize_yf(d1)
+
+    d1 = closed_only(
+        d1,
+        60,
+    )
+
+    # -------------------------
+    # 4H
+    # -------------------------
+
+    d4 = (
+        d1.resample(
+            "4h",
+            label="left",
+            closed="left",
+        )
+        .agg(
+            {
+                "o": "first",
+                "h": "max",
+                "l": "min",
+                "c": "last",
+                "v": "sum",
+            }
+        )
+        .dropna()
+    )
+
+    d4 = closed_only(
+        d4,
+        240,
+    )
+
+    if (
+        len(d15) < 80
+        or len(d1) < 60
+        or len(d4) < 20
+    ):
+        raise RuntimeError(
+            "Not enough closed candles"
+        )
+
+    return {
+        "15m": d15,
+        "1h": d1,
+        "4h": d4,
+    }
+
+
+# =========================================================
+# LIVE PRICE
+# =========================================================
+
+def get_live_price(
+    key,
+    ticker,
+):
+
+    # BTC:
+    # Binance public price is much faster than Yahoo.
+    if key == "BTCUSD":
+
+        try:
+            response = requests.get(
+                "https://api.binance.com/api/v3/ticker/price",
+                params={
+                    "symbol": "BTCUSDT",
+                },
+                timeout=10,
+            )
+
+            response.raise_for_status()
+
+            return float(
+                response.json()["price"]
+            )
+
+        except Exception:
+            pass
+
+    # Gold / Nasdaq fallback:
+    # Yahoo 1-minute data.
+
+    df = yf.download(
+        ticker,
+        period="1d",
+        interval="1m",
+        progress=False,
+        auto_adjust=False,
+        threads=False,
+    )
+
+    df = normalize_yf(df)
+
+    if df.empty:
+        raise RuntimeError(
+            "Live price unavailable"
+        )
+
+    return float(
+        df["c"].iloc[-1]
+    )
+
+
+# =========================================================
+# INDICATORS
+# =========================================================
+
+def ema(
+    series,
+    period,
+):
+    return series.ewm(
+        span=period,
+        adjust=False,
+    ).mean()
+
+
+def atr(
+    df,
+    period=ATR_PERIOD,
+):
+    previous_close = (
+        df["c"]
+        .shift(1)
+    )
+
+    true_range = pd.concat(
         [
-            high_low,
-            high_close,
-            low_close,
+            df["h"] - df["l"],
+
+            (
+                df["h"]
+                - previous_close
+            ).abs(),
+
+            (
+                df["l"]
+                - previous_close
+            ).abs(),
         ],
         axis=1,
+    ).max(
+        axis=1
     )
 
-    true_range = (
-        ranges.max(axis=1)
+    return true_range.rolling(
+        period
+    ).mean()
+
+
+# =========================================================
+# TREND
+# =========================================================
+
+def trend(df):
+    close = df["c"]
+
+    ema20 = float(
+        ema(
+            close,
+            20,
+        ).iloc[-1]
     )
 
-    return (
-        true_range
-        .rolling(period)
-        .mean()
+    ema50 = float(
+        ema(
+            close,
+            50,
+        ).iloc[-1]
     )
+
+    price = float(
+        close.iloc[-1]
+    )
+
+    if (
+        price > ema20
+        and ema20 > ema50
+    ):
+        return 1
+
+    if (
+        price < ema20
+        and ema20 < ema50
+    ):
+        return -1
+
+    return 0
+
+
+def trend_name(value):
+    names = {
+        1: "BULLISH",
+        -1: "BEARISH",
+        0: "RANGE",
+    }
+
+    return names[value]
 
 
 # =========================================================
 # VOLUME
 # =========================================================
 
-def volume_score(df):
-    if len(df) < 21:
-        return False
-
-    current_volume = float(
-        df["Volume"].iloc[-1]
+def volume_info(d15):
+    volume = (
+        d15["v"]
+        .astype(float)
     )
 
-    average_volume = float(
-        df["Volume"]
+    average = float(
+        volume
         .iloc[-21:-1]
         .mean()
     )
 
-    if (
-        pd.isna(current_volume)
-        or
-        pd.isna(average_volume)
-        or
-        average_volume <= 0
-    ):
+    if average <= 0:
+        return {
+            "ratio": None,
+            "label": "N/A",
+        }
+
+    ratio = (
+        float(volume.iloc[-1])
+        / average
+    )
+
+    if ratio >= 1.50:
+        label = "HIGH"
+
+    elif ratio >= 1.10:
+        label = "GOOD"
+
+    elif ratio >= 0.75:
+        label = "NORMAL"
+
+    else:
+        label = "LOW"
+
+    return {
+        "ratio": ratio,
+        "label": label,
+    }
+
+
+# =========================================================
+# CISD
+# =========================================================
+
+def cisd_confirm(
+    d15,
+    side,
+):
+    """
+    CISD is only a bonus.
+    It is NOT mandatory.
+    """
+
+    x = d15.tail(12)
+
+    if len(x) < 6:
         return False
 
-    return (
-        current_volume
-        >
-        average_volume * 1.15
+    opens = x["o"].values
+    closes = x["c"].values
+
+    start = len(x) - 2
+    stop = max(
+        0,
+        len(x) - 7,
     )
+
+    for i in range(
+        start,
+        stop,
+        -1,
+    ):
+
+        if side == 1:
+            opposite = (
+                closes[i]
+                < opens[i]
+            )
+
+        else:
+            opposite = (
+                closes[i]
+                > opens[i]
+            )
+
+        if opposite:
+
+            level = float(
+                opens[i]
+            )
+
+            if side == 1:
+                return bool(
+                    closes[-1]
+                    > level
+                )
+
+            return bool(
+                closes[-1]
+                < level
+            )
+
+    return False
 
 
 # =========================================================
-# LONDON RANGE
+# HIGHER TIMEFRAME LEVELS
 # =========================================================
 
-def london_range(df):
-    local = df.copy()
-
-    local.index = local.index.tz_convert(
-        LONDON_TZ
-    )
-
-    now = datetime.now(
-        timezone.utc
-    ).astimezone(
-        LONDON_TZ
-    )
-
-    today = now.date()
-
-    if now.hour < 12:
-        return None
-
-    session = local[
-        (local.index.date == today)
-        &
-        (local.index.hour >= 8)
-        &
-        (local.index.hour < 12)
-    ]
-
-    if session.empty:
-        return None
-
-    return {
-        "name": "London",
-        "high": float(
-            session["High"].max()
-        ),
-        "low": float(
-            session["Low"].min()
-        ),
-        "timezone": LONDON_TZ,
-        "end_hour": 12,
-        "end_minute": 0,
-    }
-
-
-# =========================================================
-# NEW YORK RANGE
-# =========================================================
-
-def new_york_range(df):
-    local = df.copy()
-
-    local.index = local.index.tz_convert(
-        NY_TZ
-    )
-
-    now = datetime.now(
-        timezone.utc
-    ).astimezone(
-        NY_TZ
-    )
-
-    today = now.date()
-
-    current_minutes = (
-        now.hour * 60
-        + now.minute
-    )
-
-    start_minutes = (
-        9 * 60
-        + 30
-    )
-
-    end_minutes = (
-        11 * 60
-    )
-
-    if current_minutes < end_minutes:
-        return None
-
-    candle_minutes = (
-        local.index.hour * 60
-        + local.index.minute
-    )
-
-    session = local[
-        (local.index.date == today)
-        &
-        (
-            candle_minutes
-            >= start_minutes
-        )
-        &
-        (
-            candle_minutes
-            < end_minutes
-        )
-    ]
-
-    if session.empty:
-        return None
-
-    return {
-        "name": "New York",
-        "high": float(
-            session["High"].max()
-        ),
-        "low": float(
-            session["Low"].min()
-        ),
-        "timezone": NY_TZ,
-        "end_hour": 11,
-        "end_minute": 0,
-    }
-
-
-# =========================================================
-# CANDLE AFTER SESSION
-# =========================================================
-
-def candle_after_session(
-    candle_time,
-    session,
-):
-    local_time = candle_time.tz_convert(
-        session["timezone"]
-    )
-
-    candle_minutes = (
-        local_time.hour * 60
-        + local_time.minute
-    )
-
-    end_minutes = (
-        session["end_hour"] * 60
-        + session["end_minute"]
-    )
-
-    return candle_minutes >= end_minutes
-
-
-# =========================================================
-# SIGNAL DETECTION
-# ORIGINAL STRATEGY CONDITIONS UNCHANGED
-# =========================================================
-
-def detect_signal(
+def recent_levels(
     df,
-    session,
+    lookback,
 ):
-    if session is None:
-        return None
-
-    if len(df) < ATR_PERIOD + 5:
-        return None
-
-    candle_time = df.index[-1]
-
-    if not candle_after_session(
-        candle_time,
-        session,
-    ):
-        return None
-
-    atr_series = calculate_atr(
-        df,
-        ATR_PERIOD,
+    x = df.tail(
+        lookback
     )
 
-    atr = float(
-        atr_series.iloc[-1]
-    )
-
-    if (
-        pd.isna(atr)
-        or
-        atr <= 0
-    ):
-        return None
-
-    current = df.iloc[-1]
-    previous = df.iloc[-2]
-
-    open_price = float(
-        current["Open"]
-    )
-
-    high = float(
-        current["High"]
-    )
-
-    low = float(
-        current["Low"]
-    )
-
-    close = float(
-        current["Close"]
-    )
-
-    prev_close = float(
-        previous["Close"]
-    )
-
-    session_high = float(
-        session["high"]
-    )
-
-    session_low = float(
-        session["low"]
-    )
-
-    break_buffer = (
-        atr
-        * BREAK_BUFFER_ATR
-    )
-
-    sl_buffer = (
-        atr
-        * SL_BUFFER_ATR
-    )
-
-    strong_volume = volume_score(
-        df
-    )
-
-    # =====================================================
-    # LONG BREAKOUT
-    # =====================================================
-
-    if (
-        close
-        >
-        session_high
-        + break_buffer
-
-        and
-
-        prev_close
-        <=
-        session_high
-        + break_buffer
-    ):
-        entry = close
-
-        stop = min(
-            session_high - sl_buffer,
-            low - sl_buffer,
-        )
-
-        risk = entry - stop
-
-        if risk > 0:
-            return {
-                "setup":
-                f"{session['name']} Breakout",
-
-                "direction":
-                "LONG",
-
-                "entry":
-                entry,
-
-                "stop":
-                stop,
-
-                "tp1":
-                entry + risk * 1.5,
-
-                "tp2":
-                entry + risk * 2.0,
-
-                "rr":
-                2.0,
-
-                "volume":
-                strong_volume,
-
-                "atr":
-                atr,
-
-                "reason":
-                (
-                    "15m candle closed above "
-                    f"{session['name']} High."
-                ),
-            }
-
-    # =====================================================
-    # SHORT BREAKOUT
-    # =====================================================
-
-    if (
-        close
-        <
-        session_low
-        - break_buffer
-
-        and
-
-        prev_close
-        >=
-        session_low
-        - break_buffer
-    ):
-        entry = close
-
-        stop = max(
-            session_low + sl_buffer,
-            high + sl_buffer,
-        )
-
-        risk = stop - entry
-
-        if risk > 0:
-            return {
-                "setup":
-                f"{session['name']} Breakout",
-
-                "direction":
-                "SHORT",
-
-                "entry":
-                entry,
-
-                "stop":
-                stop,
-
-                "tp1":
-                entry - risk * 1.5,
-
-                "tp2":
-                entry - risk * 2.0,
-
-                "rr":
-                2.0,
-
-                "volume":
-                strong_volume,
-
-                "atr":
-                atr,
-
-                "reason":
-                (
-                    "15m candle closed below "
-                    f"{session['name']} Low."
-                ),
-            }
-
-    # =====================================================
-    # HIGH SWEEP -> SHORT
-    # =====================================================
-
-    swept_high = (
-        high
-        >
-        session_high
-        + break_buffer
-
-        and
-
-        close
-        <
-        session_high
-    )
-
-    bearish_confirmation = (
-        close < open_price
-        or
-        close < prev_close
-    )
-
-    if (
-        swept_high
-        and
-        bearish_confirmation
-    ):
-        entry = close
-
-        stop = (
-            high
-            + sl_buffer
-        )
-
-        risk = stop - entry
-
-        if risk > 0:
-            return {
-                "setup":
-                f"{session['name']} High Sweep",
-
-                "direction":
-                "SHORT",
-
-                "entry":
-                entry,
-
-                "stop":
-                stop,
-
-                "tp1":
-                entry - risk * 1.5,
-
-                "tp2":
-                entry - risk * 2.0,
-
-                "rr":
-                2.0,
-
-                "volume":
-                strong_volume,
-
-                "atr":
-                atr,
-
-                "reason":
-                (
-                    f"{session['name']} High "
-                    "was swept and price "
-                    "closed back inside the range."
-                ),
-            }
-
-    # =====================================================
-    # LOW SWEEP -> LONG
-    # =====================================================
-
-    swept_low = (
-        low
-        <
-        session_low
-        - break_buffer
-
-        and
-
-        close
-        >
-        session_low
-    )
-
-    bullish_confirmation = (
-        close > open_price
-        or
-        close > prev_close
-    )
-
-    if (
-        swept_low
-        and
-        bullish_confirmation
-    ):
-        entry = close
-
-        stop = (
-            low
-            - sl_buffer
-        )
-
-        risk = entry - stop
-
-        if risk > 0:
-            return {
-                "setup":
-                f"{session['name']} Low Sweep",
-
-                "direction":
-                "LONG",
-
-                "entry":
-                entry,
-
-                "stop":
-                stop,
-
-                "tp1":
-                entry + risk * 1.5,
-
-                "tp2":
-                entry + risk * 2.0,
-
-                "rr":
-                2.0,
-
-                "volume":
-                strong_volume,
-
-                "atr":
-                atr,
-
-                "reason":
-                (
-                    f"{session['name']} Low "
-                    "was swept and price "
-                    "closed back inside the range."
-                ),
-            }
-
-    return None
+    return {
+        "support": float(
+            x["l"].min()
+        ),
+
+        "resistance": float(
+            x["h"].max()
+        ),
+    }
 
 
 # =========================================================
-# SCORE
+# HTF CONTEXT
 # =========================================================
 
-def get_score(signal):
-    score = 70
+def htf_context(
+    frames,
+    side,
+    price,
+):
 
-    if signal["volume"]:
-        score += 10
+    d1 = frames["1h"]
+    d4 = frames["4h"]
 
-    if "Sweep" in signal["setup"]:
-        score += 5
+    trend_1h = trend(d1)
+    trend_4h = trend(d4)
 
-    if score >= 80:
-        return "A"
+    atr_1h = float(
+        atr(d1).iloc[-1]
+    )
 
-    if score >= 70:
-        return "B"
+    if (
+        not math.isfinite(atr_1h)
+        or atr_1h <= 0
+    ):
+        atr_1h = max(
+            price * 0.002,
+            1e-9,
+        )
 
-    return "C"
+    levels_1h = recent_levels(
+        d1,
+        24,
+    )
+
+    levels_4h = recent_levels(
+        d4,
+        20,
+    )
+
+    # -------------------------
+    # LONG
+    # -------------------------
+
+    if side == 1:
+
+        levels = [
+            levels_1h["support"],
+            levels_4h["support"],
+        ]
+
+        distances = [
+            price - level
+            for level in levels
+            if level <= price
+        ]
+
+        nearest = (
+            min(distances)
+            if distances
+            else float("inf")
+        )
+
+        near_zone = (
+            nearest
+            <= (
+                HTF_ZONE_DISTANCE_ATR_1H
+                * atr_1h
+            )
+        )
+
+        zone_text = (
+            f"Support 1H "
+            f"{fmt(levels_1h['support'])}"
+            f" | "
+            f"Support 4H "
+            f"{fmt(levels_4h['support'])}"
+        )
+
+    # -------------------------
+    # SHORT
+    # -------------------------
+
+    else:
+
+        levels = [
+            levels_1h["resistance"],
+            levels_4h["resistance"],
+        ]
+
+        distances = [
+            level - price
+            for level in levels
+            if level >= price
+        ]
+
+        nearest = (
+            min(distances)
+            if distances
+            else float("inf")
+        )
+
+        near_zone = (
+            nearest
+            <= (
+                HTF_ZONE_DISTANCE_ATR_1H
+                * atr_1h
+            )
+        )
+
+        zone_text = (
+            f"Resistance 1H "
+            f"{fmt(levels_1h['resistance'])}"
+            f" | "
+            f"Resistance 4H "
+            f"{fmt(levels_4h['resistance'])}"
+        )
+
+    aligned_1h = (
+        trend_1h == side
+    )
+
+    aligned_4h = (
+        trend_4h == side
+    )
+
+    strong_against = (
+        trend_1h == -side
+        and trend_4h == -side
+    )
+
+    return {
+        "t1": trend_1h,
+        "t4": trend_4h,
+
+        "aligned_1h": aligned_1h,
+        "aligned_4h": aligned_4h,
+
+        "near_zone": near_zone,
+
+        "strong_against": (
+            strong_against
+        ),
+
+        "zone_text": zone_text,
+    }
 
 
 # =========================================================
 # ENTRY ZONE
 # =========================================================
 
-def calculate_entry_zone(signal):
-    entry = signal["entry"]
-    atr = signal["atr"]
-
-    zone_size = (
-        atr
-        * ENTRY_ZONE_ATR
-    )
-
-    zone_low = (
-        entry
-        - zone_size
-    )
-
-    zone_high = (
-        entry
-        + zone_size
-    )
-
-    return (
-        zone_low,
-        zone_high,
-    )
-
-
-# =========================================================
-# CURRENT PRICE
-# =========================================================
-
-def get_current_price(ticker):
-    try:
-        live = yf.download(
-            ticker,
-            period="1d",
-            interval="1m",
-            progress=False,
-            auto_adjust=False,
-        )
-
-        if live.empty:
-            return None
-
-        if isinstance(
-            live.columns,
-            pd.MultiIndex,
-        ):
-            live.columns = (
-                live.columns
-                .get_level_values(0)
-            )
-
-        if "Close" not in live.columns:
-            return None
-
-        live = live.dropna(
-            subset=["Close"]
-        )
-
-        if live.empty:
-            return None
-
-        return float(
-            live["Close"].iloc[-1]
-        )
-
-    except Exception as e:
-        print(
-            f"Current price error: {e}"
-        )
-
-        return None
-
-
-# =========================================================
-# ENTRY STATUS
-# =========================================================
-
-def price_inside_entry_zone(
-    current_price,
-    zone_low,
-    zone_high,
+def calculate_entry_zone(
+    side,
+    close,
+    atr15,
 ):
-    if current_price is None:
-        return False
 
-    return (
-        zone_low
-        <= current_price
-        <= zone_high
-    )
+    # LONG
+    if side == 1:
 
-
-def get_entry_status(
-    current_price,
-    zone_low,
-    zone_high,
-):
-    if current_price is None:
-        return (
-            "⚠️ Current price unavailable\n"
-            "Check market price before entry."
+        low = (
+            close
+            - ENTRY_BACK_ATR
+            * atr15
         )
 
-    if price_inside_entry_zone(
-        current_price,
-        zone_low,
-        zone_high,
-    ):
-        return (
-            "✅ PRICE INSIDE ENTRY ZONE\n"
-            "⚡ ENTER NOW"
+        high = (
+            close
+            + ENTRY_FRONT_ATR
+            * atr15
+        )
+
+    # SHORT
+    else:
+
+        low = (
+            close
+            - ENTRY_FRONT_ATR
+            * atr15
+        )
+
+        high = (
+            close
+            + ENTRY_BACK_ATR
+            * atr15
         )
 
     return (
-        "⛔ ENTRY MISSED / PRICE OUTSIDE ZONE\n"
-        "➡️ DO NOT CHASE — WAIT"
+        float(low),
+        float(high),
     )
 
 
 # =========================================================
-# TRADE TRACKING
+# BUILD TRADE PLAN
 # =========================================================
 
-def open_trade(
-    state,
-    symbol,
-    signal,
-    current_price,
-    candle_time,
+def build_trade_plan(
+    side,
+    setup_type,
+    d15,
+    reference_level,
+    atr15,
 ):
-    zone_low, zone_high = (
-        calculate_entry_zone(signal)
+
+    last = d15.iloc[-1]
+
+    entry = float(
+        last["c"]
     )
 
-    state["trades"][symbol] = {
-        "status": "OPEN",
-        "symbol": symbol,
-        "direction": signal["direction"],
-        "setup": signal["setup"],
-        "entry_reference": signal["entry"],
-        "actual_entry_reference": current_price,
-        "zone_low": zone_low,
-        "zone_high": zone_high,
-        "stop": signal["stop"],
-        "tp1": signal["tp1"],
-        "tp2": signal["tp2"],
-        "tp1_hit": False,
-        "opened_at": datetime.now(
-            timezone.utc
-        ).isoformat(),
-        "signal_candle": candle_time.isoformat(),
-    }
+    # -------------------------
+    # LONG
+    # -------------------------
 
+    if side == 1:
 
-def close_trade(
-    state,
-    symbol,
-    result,
-    price,
-):
-    trade = state["trades"].get(symbol)
+        if setup_type == "SWEEP":
 
-    if not trade:
-        return
+            stop = (
+                float(last["l"])
+                - SL_BUFFER_ATR
+                * atr15
+            )
 
-    trade["status"] = "CLOSED"
-    trade["result"] = result
-    trade["closed_price"] = price
-    trade["closed_at"] = datetime.now(
-        timezone.utc
-    ).isoformat()
+        else:
 
-    state["last_closed_trade"][symbol] = (
-        trade.copy()
-    )
+            stop = (
+                min(
+                    float(last["l"]),
+                    reference_level,
+                )
+                - SL_BUFFER_ATR
+                * atr15
+            )
 
-    del state["trades"][symbol]
-
-
-def format_trade_event(
-    symbol,
-    trade,
-    event,
-    current_price,
-):
-    direction_icon = (
-        "🟢"
-        if trade["direction"] == "LONG"
-        else "🔴"
-    )
-
-    if event == "SL":
-        return (
-            f"❌ {symbol} — STOP LOSS HIT\n\n"
-            f"{direction_icon} Previous trade: "
-            f"{trade['direction']}\n"
-            f"Setup: {trade['setup']}\n\n"
-            f"🛑 Stop Loss: "
-            f"{trade['stop']:.2f}\n"
-            f"Current price: "
-            f"{current_price:.2f}\n\n"
-            f"Trade closed."
+        risk = (
+            entry - stop
         )
 
-    if event == "TP1":
-        return (
-            f"✅ {symbol} — TP1 HIT\n\n"
-            f"{direction_icon} "
-            f"{trade['direction']}\n"
-            f"Setup: {trade['setup']}\n\n"
-            f"🎯 TP1: "
-            f"{trade['tp1']:.2f}\n"
-            f"Current price: "
-            f"{current_price:.2f}\n\n"
-            f"Trade remains active for TP2."
+    # -------------------------
+    # SHORT
+    # -------------------------
+
+    else:
+
+        if setup_type == "SWEEP":
+
+            stop = (
+                float(last["h"])
+                + SL_BUFFER_ATR
+                * atr15
+            )
+
+        else:
+
+            stop = (
+                max(
+                    float(last["h"]),
+                    reference_level,
+                )
+                + SL_BUFFER_ATR
+                * atr15
+            )
+
+        risk = (
+            stop - entry
         )
-
-    if event == "TP2":
-        return (
-            f"🎯 {symbol} — TP2 HIT\n\n"
-            f"{direction_icon} "
-            f"{trade['direction']}\n"
-            f"Setup: {trade['setup']}\n\n"
-            f"🎯 TP2: "
-            f"{trade['tp2']:.2f}\n"
-            f"Current price: "
-            f"{current_price:.2f}\n\n"
-            f"✅ Trade completed."
-        )
-
-    return ""
-
-
-def monitor_open_trade(
-    state,
-    symbol,
-    current_price,
-):
-    trade = state["trades"].get(symbol)
-
-    if not trade:
-        return
-
-    if current_price is None:
-        return
-
-    direction = trade["direction"]
-
-    # =====================================================
-    # LONG TRADE
-    # =====================================================
-
-    if direction == "LONG":
-
-        # Check stop first.
-        # With snapshot polling we cannot know exact intrabar
-        # order if both levels were crossed between scans.
-        if current_price <= trade["stop"]:
-            send_telegram(
-                format_trade_event(
-                    symbol,
-                    trade,
-                    "SL",
-                    current_price,
-                )
-            )
-
-            close_trade(
-                state,
-                symbol,
-                "SL",
-                current_price,
-            )
-
-            return
-
-        if current_price >= trade["tp2"]:
-            if not trade.get(
-                "tp1_hit",
-                False,
-            ):
-                send_telegram(
-                    format_trade_event(
-                        symbol,
-                        trade,
-                        "TP1",
-                        current_price,
-                    )
-                )
-
-            send_telegram(
-                format_trade_event(
-                    symbol,
-                    trade,
-                    "TP2",
-                    current_price,
-                )
-            )
-
-            close_trade(
-                state,
-                symbol,
-                "TP2",
-                current_price,
-            )
-
-            return
-
-        if (
-            current_price >= trade["tp1"]
-            and
-            not trade.get(
-                "tp1_hit",
-                False,
-            )
-        ):
-            send_telegram(
-                format_trade_event(
-                    symbol,
-                    trade,
-                    "TP1",
-                    current_price,
-                )
-            )
-
-            trade["tp1_hit"] = True
-
-            return
-
-    # =====================================================
-    # SHORT TRADE
-    # =====================================================
-
-    if direction == "SHORT":
-
-        if current_price >= trade["stop"]:
-            send_telegram(
-                format_trade_event(
-                    symbol,
-                    trade,
-                    "SL",
-                    current_price,
-                )
-            )
-
-            close_trade(
-                state,
-                symbol,
-                "SL",
-                current_price,
-            )
-
-            return
-
-        if current_price <= trade["tp2"]:
-            if not trade.get(
-                "tp1_hit",
-                False,
-            ):
-                send_telegram(
-                    format_trade_event(
-                        symbol,
-                        trade,
-                        "TP1",
-                        current_price,
-                    )
-                )
-
-            send_telegram(
-                format_trade_event(
-                    symbol,
-                    trade,
-                    "TP2",
-                    current_price,
-                )
-            )
-
-            close_trade(
-                state,
-                symbol,
-                "TP2",
-                current_price,
-            )
-
-            return
-
-        if (
-            current_price <= trade["tp1"]
-            and
-            not trade.get(
-                "tp1_hit",
-                False,
-            )
-        ):
-            send_telegram(
-                format_trade_event(
-                    symbol,
-                    trade,
-                    "TP1",
-                    current_price,
-                )
-            )
-
-            trade["tp1_hit"] = True
-
-
-# =========================================================
-# REVERSAL CONTEXT
-# =========================================================
-
-def get_reversal_context(
-    state,
-    symbol,
-    new_direction,
-):
-    last_trade = (
-        state
-        .get(
-            "last_closed_trade",
-            {}
-        )
-        .get(symbol)
-    )
-
-    if not last_trade:
-        return ""
-
-    old_direction = last_trade.get(
-        "direction"
-    )
-
-    result = last_trade.get(
-        "result"
-    )
 
     if (
-        old_direction
-        and
-        old_direction != new_direction
+        not math.isfinite(risk)
+        or risk <= 0
     ):
-        if result == "SL":
-            return (
-                "🔄 REVERSAL AFTER STOP\n"
-                f"Previous {old_direction} "
-                "trade hit Stop Loss.\n"
-                "New opposite setup detected.\n\n"
-            )
+        return None
 
-        return (
-            "🔄 OPPOSITE / REVERSAL SETUP\n"
-            f"Previous direction: "
-            f"{old_direction}\n"
-            f"New direction: "
-            f"{new_direction}\n\n"
-        )
-
-    return ""
-
-
-# =========================================================
-# FORMAT SIGNAL
-# =========================================================
-
-def format_signal(
-    symbol,
-    signal,
-    candle_time,
-    current_price,
-    reversal_context="",
-):
-    if signal["direction"] == "LONG":
-        icon = "🟢"
-    else:
-        icon = "🔴"
-
-    score = get_score(
-        signal
+    target_1 = (
+        entry
+        + side
+        * risk
+        * MIN_RR
     )
 
-    volume_text = (
-        "Strong"
-        if signal["volume"]
-        else "Normal"
+    target_2 = (
+        entry
+        + side
+        * risk
+        * 2.0
+    )
+
+    target_3 = (
+        entry
+        + side
+        * risk
+        * 3.0
     )
 
     zone_low, zone_high = (
         calculate_entry_zone(
-            signal
+            side,
+            entry,
+            atr15,
         )
     )
 
-    status = get_entry_status(
-        current_price,
-        zone_low,
-        zone_high,
+    return {
+        "entry": entry,
+
+        "zone_low": zone_low,
+        "zone_high": zone_high,
+
+        "stop": float(stop),
+
+        "tps": [
+            float(target_1),
+            float(target_2),
+            float(target_3),
+        ],
+
+        "risk": float(risk),
+
+        "atr15": float(atr15),
+
+        "retest_confirm_buffer": float(
+            RETEST_CONFIRM_ATR
+            * atr15
+        ),
+    }
+
+
+# =========================================================
+# DETECT SETUP
+# =========================================================
+
+def detect_signal(
+    key,
+    frames,
+):
+
+    d15 = frames["15m"]
+
+    last = d15.iloc[-1]
+
+    previous = (
+        d15
+        .iloc[-21:-1]
     )
 
-    baghdad_time = (
-        candle_time
-        .tz_convert(BAGHDAD_TZ)
-        .strftime(
-            "%Y-%m-%d %H:%M"
+    atr15 = float(
+        atr(d15).iloc[-1]
+    )
+
+    if (
+        not math.isfinite(atr15)
+        or atr15 <= 0
+    ):
+        return None
+
+    previous_high = float(
+        previous["h"].max()
+    )
+
+    previous_low = float(
+        previous["l"].min()
+    )
+
+    close = float(
+        last["c"]
+    )
+
+    high = float(
+        last["h"]
+    )
+
+    low = float(
+        last["l"]
+    )
+
+    # =====================================================
+    # SWEEP
+    # =====================================================
+
+    sweep_low = (
+        low
+        < (
+            previous_low
+            - SWEEP_BUFFER_ATR
+            * atr15
+        )
+        and close > previous_low
+    )
+
+    sweep_high = (
+        high
+        > (
+            previous_high
+            + SWEEP_BUFFER_ATR
+            * atr15
+        )
+        and close < previous_high
+    )
+
+    # =====================================================
+    # BREAKOUT
+    # =====================================================
+
+    break_up = (
+        close
+        > (
+            previous_high
+            + BREAK_BUFFER_ATR
+            * atr15
         )
     )
 
-    if current_price is None:
-        current_text = "Unavailable"
+    break_down = (
+        close
+        < (
+            previous_low
+            - BREAK_BUFFER_ATR
+            * atr15
+        )
+    )
+
+    # =====================================================
+    # PICK SETUP
+    # =====================================================
+
+    if sweep_low:
+
+        side = 1
+
+        setup_type = "SWEEP"
+
+        setup_name = (
+            "Liquidity Low Sweep"
+        )
+
+        reference_level = (
+            previous_low
+        )
+
+        score = 6.0
+
+    elif sweep_high:
+
+        side = -1
+
+        setup_type = "SWEEP"
+
+        setup_name = (
+            "Liquidity High Sweep"
+        )
+
+        reference_level = (
+            previous_high
+        )
+
+        score = 6.0
+
+    elif break_up:
+
+        side = 1
+
+        setup_type = "BREAKOUT"
+
+        setup_name = "Breakout"
+
+        reference_level = (
+            previous_high
+        )
+
+        score = 6.3
+
+    elif break_down:
+
+        side = -1
+
+        setup_type = "BREAKOUT"
+
+        setup_name = "Breakout"
+
+        reference_level = (
+            previous_low
+        )
+
+        score = 6.3
+
     else:
-        current_text = (
-            f"{current_price:.2f}"
+        return None
+
+    # =====================================================
+    # EXTRA CONTEXT
+    # =====================================================
+
+    volume = volume_info(
+        d15
+    )
+
+    htf = htf_context(
+        frames,
+        side,
+        close,
+    )
+
+    cisd = cisd_confirm(
+        d15,
+        side,
+    )
+
+    # =====================================================
+    # LIGHT SCORE
+    # =====================================================
+
+    # 1H alignment
+    if htf["aligned_1h"]:
+        score += 0.8
+
+    # 4H alignment
+    if htf["aligned_4h"]:
+        score += 0.5
+
+    # Near 1H/4H important zone
+    if htf["near_zone"]:
+        score += 0.8
+
+    # Both higher frames strongly against trade
+    if htf["strong_against"]:
+        score -= 1.2
+
+    # Volume
+    if volume["ratio"] is not None:
+
+        if volume["ratio"] >= 1.50:
+            score += 0.8
+
+        elif volume["ratio"] >= 1.10:
+            score += 0.4
+
+        elif volume["ratio"] < 0.65:
+            score -= 0.4
+
+    # CISD = bonus only
+    if cisd:
+        score += 0.5
+
+    score = round(
+        max(
+            0.0,
+            min(
+                10.0,
+                score,
+            ),
+        ),
+        1,
+    )
+
+    # =====================================================
+    # GRADE
+    # =====================================================
+
+    if (
+        score >= A_SCORE
+        and not htf["strong_against"]
+    ):
+        grade = "A"
+
+    elif score >= B_SCORE:
+        grade = "B"
+
+    else:
+        return None
+
+    # =====================================================
+    # PLAN
+    # =====================================================
+
+    plan = build_trade_plan(
+        side,
+        setup_type,
+        d15,
+        reference_level,
+        atr15,
+    )
+
+    if not plan:
+        return None
+
+    candle_start = stamp(
+        d15.index[-1]
+    )
+
+    candle_end = (
+        candle_start
+        + pd.Timedelta(
+            minutes=15
+        )
+    )
+
+    signal_id = (
+        f"{key}:"
+        f"{setup_type}:"
+        f"{'L' if side == 1 else 'S'}:"
+        f"{candle_end.isoformat()}"
+    )
+
+    return {
+        "id": signal_id,
+
+        "key": key,
+
+        "side": side,
+
+        "setup_type": (
+            setup_type
+        ),
+
+        "setup_name": (
+            setup_name
+        ),
+
+        "score": score,
+
+        "grade": grade,
+
+        "volume": volume,
+
+        "htf": htf,
+
+        "cisd": cisd,
+
+        "plan": plan,
+
+        "confirmation_end": (
+            candle_end
+        ),
+    }
+
+
+# =========================================================
+# INITIAL ENTRY DECISION
+# =========================================================
+
+def initial_entry_status(
+    signal,
+    live_price,
+    now,
+):
+
+    plan = signal["plan"]
+
+    age_seconds = max(
+        0.0,
+        (
+            now
+            - signal["confirmation_end"]
+        ).total_seconds(),
+    )
+
+    inside = (
+        plan["zone_low"]
+        <= live_price
+        <= plan["zone_high"]
+    )
+
+    # =====================================================
+    # B SETUP
+    # =====================================================
+
+    # B never gets immediate ENTER NOW.
+    if signal["grade"] == "B":
+
+        return {
+            "status": (
+                "WAIT FOR CONFIRMATION"
+            ),
+
+            "tradable": False,
+
+            "watch": True,
+
+            "age_seconds": (
+                age_seconds
+            ),
+        }
+
+    # =====================================================
+    # A SETUP
+    # =====================================================
+
+    # Fresh + still inside zone.
+    if (
+        age_seconds
+        <= MAX_ENTER_AGE_SECONDS
+        and inside
+    ):
+
+        return {
+            "status": "ENTER NOW",
+
+            "tradable": True,
+
+            "watch": False,
+
+            "age_seconds": (
+                age_seconds
+            ),
+        }
+
+    # Setup is still valid,
+    # but direct entry is missed.
+    if inside:
+
+        status = (
+            "WAIT FOR RETEST CONFIRMATION"
         )
 
+    else:
+
+        status = (
+            "WAIT FOR RETEST — DO NOT CHASE"
+        )
+
+    return {
+        "status": status,
+
+        "tradable": False,
+
+        "watch": True,
+
+        "age_seconds": (
+            age_seconds
+        ),
+    }
+
+
+# =========================================================
+# STORE WATCH SETUP
+# =========================================================
+
+def signal_to_watch(
+    signal,
+    live_price,
+    now,
+):
+
+    plan = signal["plan"]
+
+    inside = (
+        plan["zone_low"]
+        <= live_price
+        <= plan["zone_high"]
+    )
+
+    return {
+        "id": signal["id"],
+
+        "key": signal["key"],
+
+        "side": signal["side"],
+
+        "setup_name": (
+            signal["setup_name"]
+        ),
+
+        "grade": signal["grade"],
+
+        "score": signal["score"],
+
+        "plan": plan,
+
+        "confirmation_end": (
+            signal["confirmation_end"]
+            .isoformat()
+        ),
+
+        "created_at": (
+            now.isoformat()
+        ),
+
+        "expires_at": (
+            signal["confirmation_end"]
+            + pd.Timedelta(
+                minutes=(
+                    WATCH_EXPIRY_MINUTES
+                )
+            )
+        ).isoformat(),
+
+        # If signal arrived while already
+        # back inside zone, consider zone touched.
+        "touched": bool(inside),
+
+        "touch_time": (
+            now.isoformat()
+            if inside
+            else None
+        ),
+    }
+
+
+# =========================================================
+# RETEST CONFIRM LEVEL
+# =========================================================
+
+def retest_confirmation_level(
+    watch,
+):
+
+    plan = watch["plan"]
+
+    buffer_value = (
+        plan[
+            "retest_confirm_buffer"
+        ]
+    )
+
+    # LONG
+    if watch["side"] == 1:
+
+        return (
+            plan["zone_high"]
+            + buffer_value
+        )
+
+    # SHORT
     return (
-        f"{reversal_context}"
-        f"{icon} {symbol} — "
-        f"{signal['direction']}\n\n"
-
-        f"{status}\n\n"
-
-        f"Setup: "
-        f"{signal['setup']}\n"
-
-        f"Timeframe: 15m\n"
-
-        f"Confirmation candle: "
-        f"{baghdad_time} Baghdad\n\n"
-
-        f"📍 ENTRY ZONE\n"
-        f"{zone_low:.2f} — "
-        f"{zone_high:.2f}\n\n"
-
-        f"Current price: "
-        f"{current_text}\n"
-
-        f"Confirmation close: "
-        f"{signal['entry']:.2f}\n\n"
-
-        f"🛑 Stop Loss: "
-        f"{signal['stop']:.2f}\n\n"
-
-        f"🎯 TP1: "
-        f"{signal['tp1']:.2f}\n"
-
-        f"🎯 TP2: "
-        f"{signal['tp2']:.2f}\n\n"
-
-        f"R:R TP1: 1:1.5\n"
-        f"R:R TP2: 1:2.0\n\n"
-
-        f"Volume: "
-        f"{volume_text}\n"
-
-        f"Score: "
-        f"{score}\n\n"
-
-        f"Reason:\n"
-        f"{signal['reason']}"
+        plan["zone_low"]
+        - buffer_value
     )
 
 
 # =========================================================
-# CLEAN SIGNAL HISTORY
+# OPEN PAPER TRADE
 # =========================================================
 
-def clean_signal_history(state):
-    signals = state.get(
-        "signals",
-        {}
+def open_trade(
+    st,
+    signal,
+    live_price,
+    now,
+):
+
+    plan = signal["plan"]
+
+    key = signal["key"]
+
+    st["active_trade"][key] = {
+        "id": signal["id"],
+
+        "side": signal["side"],
+
+        "setup": (
+            signal["setup_name"]
+        ),
+
+        "entry": float(
+            live_price
+        ),
+
+        "stop": plan["stop"],
+
+        "tps": plan["tps"],
+
+        "hits": [
+            False,
+            False,
+            False,
+        ],
+
+        "opened_at": (
+            now.isoformat()
+        ),
+
+        "state": "OPEN",
+    }
+
+
+def open_trade_from_watch(
+    st,
+    watch,
+    live_price,
+    now,
+):
+
+    plan = watch["plan"]
+
+    key = watch["key"]
+
+    st["active_trade"][key] = {
+        "id": watch["id"],
+
+        "side": watch["side"],
+
+        "setup": (
+            watch["setup_name"]
+            + " RETEST"
+        ),
+
+        "entry": float(
+            live_price
+        ),
+
+        "stop": plan["stop"],
+
+        "tps": plan["tps"],
+
+        "hits": [
+            False,
+            False,
+            False,
+        ],
+
+        "opened_at": (
+            now.isoformat()
+        ),
+
+        "state": "OPEN",
+    }
+
+
+# =========================================================
+# PROCESS WAITING RETEST
+# =========================================================
+
+def process_watch(
+    st,
+    key,
+    live_price,
+    now,
+):
+
+    watch = (
+        st["watch_setup"]
+        .get(key)
     )
 
-    if len(signals) <= 500:
+    if not watch:
+        return None, False
+
+    plan = watch["plan"]
+
+    side = int(
+        watch["side"]
+    )
+
+    # =====================================================
+    # EXPIRY
+    # =====================================================
+
+    if now > stamp(
+        watch["expires_at"]
+    ):
+
+        st["watch_setup"].pop(
+            key,
+            None,
+        )
+
+        return None, False
+
+    # =====================================================
+    # INVALIDATION
+    # =====================================================
+
+    if side == 1:
+
+        stop_breached = (
+            live_price
+            <= plan["stop"]
+        )
+
+    else:
+
+        stop_breached = (
+            live_price
+            >= plan["stop"]
+        )
+
+    if stop_breached:
+
+        st["watch_setup"].pop(
+            key,
+            None,
+        )
+
+        message = (
+            f"❌ {key} | SETUP INVALIDATED\n"
+            f"SETUP: {watch['setup_name']}\n"
+            f"GRADE: {watch['grade']} | "
+            f"SCORE: {watch['score']}/10\n"
+            f"LIVE: {fmt(live_price)}\n"
+            f"Reason: price breached "
+            f"invalidation / SL area\n"
+            f"SETUP ID: {watch['id']}"
+        )
+
+        return message, False
+
+    # =====================================================
+    # CHECK ZONE
+    # =====================================================
+
+    inside = (
+        plan["zone_low"]
+        <= live_price
+        <= plan["zone_high"]
+    )
+
+    # Price returned to zone.
+    if (
+        inside
+        and not watch.get(
+            "touched",
+            False,
+        )
+    ):
+
+        watch["touched"] = True
+
+        watch["touch_time"] = (
+            now.isoformat()
+        )
+
+        st["watch_setup"][key] = (
+            watch
+        )
+
+        message = (
+            f"🟡 {key} | RETEST IN ENTRY ZONE\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"SETUP: {watch['setup_name']}\n"
+            f"GRADE: {watch['grade']} | "
+            f"SCORE: {watch['score']}/10\n"
+            f"ENTRY ZONE: "
+            f"{fmt(plan['zone_low'])}"
+            f" — "
+            f"{fmt(plan['zone_high'])}\n"
+            f"LIVE: {fmt(live_price)}\n"
+            f"STATUS: "
+            f"WAIT FOR RETEST CONFIRMATION\n"
+            f"SETUP ID: {watch['id']}"
+        )
+
+        return message, False
+
+    # Still hasn't returned to zone.
+    if not watch.get(
+        "touched",
+        False,
+    ):
+        return None, False
+
+    # =====================================================
+    # RETEST CONFIRMATION
+    # =====================================================
+
+    confirmation_level = (
+        retest_confirmation_level(
+            watch
+        )
+    )
+
+    if side == 1:
+
+        confirmed = (
+            live_price
+            >= confirmation_level
+        )
+
+    else:
+
+        confirmed = (
+            live_price
+            <= confirmation_level
+        )
+
+    if not confirmed:
+        return None, False
+
+    # =====================================================
+    # DO NOT CHASE AFTER RETEST
+    # =====================================================
+
+    if side == 1:
+
+        zone_edge = (
+            plan["zone_high"]
+        )
+
+        move_from_zone = (
+            live_price
+            - zone_edge
+        )
+
+    else:
+
+        zone_edge = (
+            plan["zone_low"]
+        )
+
+        move_from_zone = (
+            zone_edge
+            - live_price
+        )
+
+    max_chase = (
+        MAX_RETEST_CHASE_R
+        * plan["risk"]
+    )
+
+    # Confirmation happened,
+    # but price already ran too far.
+    if move_from_zone > max_chase:
+
+        # Require another fresh return.
+        watch["touched"] = False
+
+        watch["touch_time"] = None
+
+        st["watch_setup"][key] = (
+            watch
+        )
+
+        message = (
+            f"⚠️ {key} | RETEST MOVED TOO FAR\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"Confirmation happened but "
+            f"price already moved too far.\n"
+            f"DO NOT CHASE.\n"
+            f"Waiting for another retest.\n"
+            f"ENTRY ZONE: "
+            f"{fmt(plan['zone_low'])}"
+            f" — "
+            f"{fmt(plan['zone_high'])}\n"
+            f"LIVE: {fmt(live_price)}\n"
+            f"SETUP ID: {watch['id']}"
+        )
+
+        return message, False
+
+    # =====================================================
+    # VALID RETEST ENTRY
+    # =====================================================
+
+    st["watch_setup"].pop(
+        key,
+        None,
+    )
+
+    open_trade_from_watch(
+        st,
+        watch,
+        live_price,
+        now,
+    )
+
+    current_risk = abs(
+        live_price
+        - plan["stop"]
+    )
+
+    if current_risk <= 0:
+        current_risk = 1e-9
+
+    rr_tp1 = (
+        abs(
+            plan["tps"][0]
+            - live_price
+        )
+        / current_risk
+    )
+
+    message = (
+        f"✅ {key} | ENTER ON RETEST\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"SETUP: {watch['setup_name']}\n"
+        f"GRADE: {watch['grade']} | "
+        f"SCORE: {watch['score']}/10\n"
+        f"\n"
+        f"ENTRY: {fmt(live_price)}\n"
+        f"SL: {fmt(plan['stop'])}\n"
+        f"TP1: {fmt(plan['tps'][0])}\n"
+        f"TP2: {fmt(plan['tps'][1])}\n"
+        f"TP3: {fmt(plan['tps'][2])}\n"
+        f"R:R TO TP1: {rr_tp1:.2f}R\n"
+        f"\n"
+        f"SETUP ID: {watch['id']}"
+    )
+
+    return message, True
+
+
+# =========================================================
+# CLOSE PAPER TRADE
+# =========================================================
+
+def close_trade(
+    st,
+    key,
+    reason,
+    exit_price,
+    now,
+):
+
+    trade = (
+        st["active_trade"]
+        .get(key)
+    )
+
+    if not trade:
         return
 
-    items = list(
-        signals.items()
+    closed_trade = dict(
+        trade
     )
 
-    state["signals"] = dict(
-        items[-500:]
+    closed_trade["state"] = (
+        "CLOSED"
     )
+
+    closed_trade["exit_reason"] = (
+        reason
+    )
+
+    closed_trade["exit_price"] = (
+        float(exit_price)
+    )
+
+    closed_trade["closed_at"] = (
+        now.isoformat()
+    )
+
+    st["closed"].append(
+        closed_trade
+    )
+
+    st["active_trade"].pop(
+        key,
+        None,
+    )
+
+
+# =========================================================
+# MONITOR PAPER TRADE
+# =========================================================
+
+def monitor_open_trade(
+    st,
+    key,
+    live_price,
+    now,
+):
+
+    trade = (
+        st["active_trade"]
+        .get(key)
+    )
+
+    if not trade:
+        return None
+
+    side = trade["side"]
+
+    # =====================================================
+    # STOP
+    # =====================================================
+
+    if side == 1:
+
+        stop_hit = (
+            live_price
+            <= trade["stop"]
+        )
+
+    else:
+
+        stop_hit = (
+            live_price
+            >= trade["stop"]
+        )
+
+    if stop_hit:
+
+        close_trade(
+            st,
+            key,
+            "STOP",
+            live_price,
+            now,
+        )
+
+        return (
+            f"❌ {key} | "
+            f"{trade['id']}\n"
+            f"STOP HIT @ "
+            f"{fmt(live_price)}"
+        )
+
+    # =====================================================
+    # TARGETS
+    # =====================================================
+
+    for i, target in enumerate(
+        trade["tps"]
+    ):
+
+        if trade["hits"][i]:
+            continue
+
+        if side == 1:
+
+            target_hit = (
+                live_price
+                >= target
+            )
+
+        else:
+
+            target_hit = (
+                live_price
+                <= target
+            )
+
+        if target_hit:
+
+            trade["hits"][i] = (
+                True
+            )
+
+            # TP3 = fully closed paper trade.
+            if i == 2:
+
+                close_trade(
+                    st,
+                    key,
+                    "TP3",
+                    live_price,
+                    now,
+                )
+
+            return (
+                f"🎯 {key} | "
+                f"{trade['id']}\n"
+                f"TP{i + 1} HIT @ "
+                f"{fmt(live_price)}"
+            )
+
+    return None
+
+
+# =========================================================
+# FORMAT INITIAL SIGNAL
+# =========================================================
+
+def format_signal(
+    signal,
+    live_price,
+    entry_status,
+):
+
+    side = (
+        "LONG"
+        if signal["side"] == 1
+        else "SHORT"
+    )
+
+    plan = signal["plan"]
+
+    htf = signal["htf"]
+
+    volume = signal["volume"]
+
+    confirmation_time = (
+        signal["confirmation_end"]
+        .tz_convert(BAGHDAD)
+    )
+
+    age_seconds = int(
+        entry_status[
+            "age_seconds"
+        ]
+    )
+
+    volume_text = (
+        volume["label"]
+    )
+
+    if volume["ratio"] is not None:
+
+        volume_text += (
+            f" "
+            f"({volume['ratio']:.2f}x)"
+        )
+
+    near_htf = (
+        "YES"
+        if htf["near_zone"]
+        else "NO"
+    )
+
+    cisd_text = (
+        "YES"
+        if signal["cisd"]
+        else "NO"
+    )
+
+    return (
+        f"🚨 {signal['key']} {side}\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+
+        f"STATUS: "
+        f"{entry_status['status']}\n"
+
+        f"SETUP: "
+        f"{signal['setup_name']}\n"
+
+        f"GRADE: "
+        f"{signal['grade']} | "
+        f"SCORE: "
+        f"{signal['score']}/10\n"
+
+        f"\n"
+
+        f"ENTRY ZONE: "
+        f"{fmt(plan['zone_low'])}"
+        f" — "
+        f"{fmt(plan['zone_high'])}\n"
+
+        f"LIVE: "
+        f"{fmt(live_price)}\n"
+
+        f"SL: "
+        f"{fmt(plan['stop'])}\n"
+
+        f"TP1: "
+        f"{fmt(plan['tps'][0])} "
+        f"(1.5R reference)\n"
+
+        f"TP2: "
+        f"{fmt(plan['tps'][1])} "
+        f"(2.0R reference)\n"
+
+        f"TP3: "
+        f"{fmt(plan['tps'][2])} "
+        f"(3.0R reference)\n"
+
+        f"\n"
+
+        f"15M CONFIRMATION CLOSE: "
+        f"{confirmation_time:%Y-%m-%d %H:%M} "
+        f"Baghdad\n"
+
+        f"ALERT AGE: "
+        f"{age_seconds}s\n"
+
+        f"VOLUME: "
+        f"{volume_text}\n"
+
+        f"1H: "
+        f"{trend_name(htf['t1'])}"
+        f" | "
+        f"4H: "
+        f"{trend_name(htf['t4'])}\n"
+
+        f"NEAR HTF ZONE: "
+        f"{near_htf}\n"
+
+        f"{htf['zone_text']}\n"
+
+        f"CISD: "
+        f"{cisd_text}\n"
+
+        f"\n"
+
+        f"SETUP ID: "
+        f"{signal['id']}"
+    )
+
+
+# =========================================================
+# SCAN ONE MARKET
+# =========================================================
+
+def scan_market(
+    st,
+    key,
+    cfg,
+):
+
+    now = now_utc()
+
+    if not market_allowed(
+        cfg,
+        now,
+    ):
+        return
+
+    # =====================================================
+    # DATA
+    # =====================================================
+
+    try:
+
+        frames = get_frames(
+            cfg["ticker"]
+        )
+
+        live_price = get_live_price(
+            key,
+            cfg["ticker"],
+        )
+
+    except Exception as error:
+
+        print(
+            key,
+            "data error:",
+            error,
+        )
+
+        return
+
+    # =====================================================
+    # ACTIVE TRADE
+    # =====================================================
+
+    trade_message = (
+        monitor_open_trade(
+            st,
+            key,
+            live_price,
+            now,
+        )
+    )
+
+    if trade_message:
+
+        send_telegram(
+            trade_message
+        )
+
+    if key in st["active_trade"]:
+        return
+
+    # =====================================================
+    # OLD SETUP / RETEST
+    # =====================================================
+
+    watch_message, entered = (
+        process_watch(
+            st,
+            key,
+            live_price,
+            now,
+        )
+    )
+
+    if watch_message:
+
+        send_telegram(
+            watch_message
+        )
+
+    if (
+        entered
+        or key in st["active_trade"]
+    ):
+        return
+
+    # =====================================================
+    # NEW 15M SETUP
+    # =====================================================
+
+    signal = detect_signal(
+        key,
+        frames,
+    )
+
+    if not signal:
+        return
+
+    # Don't resend same initial candle signal.
+    if (
+        st["last_signal"].get(key)
+        == signal["id"]
+    ):
+        return
+
+    st["last_signal"][key] = (
+        signal["id"]
+    )
+
+    status = (
+        initial_entry_status(
+            signal,
+            live_price,
+            now,
+        )
+    )
+
+    # =====================================================
+    # SEND INITIAL ALERT
+    # =====================================================
+
+    send_telegram(
+        format_signal(
+            signal,
+            live_price,
+            status,
+        )
+    )
+
+    # =====================================================
+    # DIRECT ENTER NOW
+    # =====================================================
+
+    if status["tradable"]:
+
+        st["watch_setup"].pop(
+            key,
+            None,
+        )
+
+        open_trade(
+            st,
+            signal,
+            live_price,
+            now,
+        )
+
+        return
+
+    # =====================================================
+    # WAIT FOR RETEST / CONFIRMATION
+    # =====================================================
+
+    if status["watch"]:
+
+        st["watch_setup"][key] = (
+            signal_to_watch(
+                signal,
+                live_price,
+                now,
+            )
+        )
+
+
+# =========================================================
+# ONE FULL SCAN
+# =========================================================
+
+def run_once():
+
+    st = load_state()
+
+    for key, cfg in MARKETS.items():
+
+        try:
+
+            scan_market(
+                st,
+                key,
+                cfg,
+            )
+
+        except Exception as error:
+
+            print(
+                key,
+                "scan error:",
+                error,
+            )
+
+    save_state(st)
 
 
 # =========================================================
@@ -1445,294 +2368,40 @@ def clean_signal_history(state):
 # =========================================================
 
 def main():
-    print(
-        "Session Market Scanner + Trade Tracker"
+
+    scans = max(
+        1,
+        LOOP_SCANS,
     )
 
-    state = load_state()
+    for i in range(scans):
 
-    for symbol, config in MARKETS.items():
+        started = time.time()
 
         print(
-            f"\nChecking {symbol}..."
+            f"scan "
+            f"{i + 1}/"
+            f"{scans}"
         )
 
-        if not market_allowed_today(
-            config["weekdays_only"]
-        ):
-            print(
-                f"{symbol}: "
-                "disabled on weekend."
+        run_once()
+
+        if i < scans - 1:
+
+            spent = (
+                time.time()
+                - started
             )
 
-            continue
-
-        try:
-            # =================================================
-            # GET CURRENT PRICE FIRST
-            # Used for trade tracking and entry status
-            # =================================================
-
-            current_price = (
-                get_current_price(
-                    config["ticker"]
-                )
+            sleep_seconds = max(
+                1,
+                SCAN_INTERVAL_SECONDS
+                - spent,
             )
 
-            # =================================================
-            # MONITOR EXISTING OPEN TRADE
-            # =================================================
-
-            monitor_open_trade(
-                state,
-                symbol,
-                current_price,
+            time.sleep(
+                sleep_seconds
             )
-
-            # =================================================
-            # GET 15M DATA
-            # =================================================
-
-            df = get_data(
-                config["ticker"]
-            )
-
-            if (
-                df is None
-                or
-                len(df) < 30
-            ):
-                print(
-                    f"{symbol}: "
-                    "insufficient data."
-                )
-
-                continue
-
-            df = remove_active_candle(
-                df
-            )
-
-            if (
-                df is None
-                or
-                df.empty
-            ):
-                print(
-                    f"{symbol}: "
-                    "no closed candles."
-                )
-
-                continue
-
-            candle_time = (
-                df.index[-1]
-            )
-
-            if not candle_is_fresh(
-                candle_time
-            ):
-                print(
-                    f"{symbol}: "
-                    "stale candle."
-                )
-
-                continue
-
-            sessions = [
-                london_range(df),
-                new_york_range(df),
-            ]
-
-            for session in sessions:
-
-                if session is None:
-                    continue
-
-                signal = detect_signal(
-                    df,
-                    session,
-                )
-
-                if signal is None:
-                    continue
-
-                if (
-                    signal["rr"]
-                    <
-                    MIN_RR
-                ):
-                    continue
-
-                sid = signal_id(
-                    symbol,
-                    signal["setup"],
-                    signal["direction"],
-                    candle_time,
-                )
-
-                # =================================================
-                # DUPLICATE PROTECTION
-                # =================================================
-
-                if sid in state["signals"]:
-                    print(
-                        f"{symbol}: "
-                        "duplicate ignored."
-                    )
-
-                    continue
-
-                # =================================================
-                # REFRESH PRICE RIGHT BEFORE ALERT
-                # =================================================
-
-                current_price = (
-                    get_current_price(
-                        config["ticker"]
-                    )
-                )
-
-                zone_low, zone_high = (
-                    calculate_entry_zone(
-                        signal
-                    )
-                )
-
-                inside_zone = (
-                    price_inside_entry_zone(
-                        current_price,
-                        zone_low,
-                        zone_high,
-                    )
-                )
-
-                # =================================================
-                # REVERSAL CONTEXT
-                # =================================================
-
-                reversal_context = (
-                    get_reversal_context(
-                        state,
-                        symbol,
-                        signal["direction"],
-                    )
-                )
-
-                # =================================================
-                # SEND SIGNAL
-                # =================================================
-
-                message = format_signal(
-                    symbol,
-                    signal,
-                    candle_time,
-                    current_price,
-                    reversal_context,
-                )
-
-                send_telegram(
-                    message
-                )
-
-                # =================================================
-                # SAVE SIGNAL HISTORY
-                # =================================================
-
-                state["signals"][sid] = {
-                    "sent_at":
-                    datetime.now(
-                        timezone.utc
-                    ).isoformat(),
-
-                    "symbol":
-                    symbol,
-
-                    "setup":
-                    signal["setup"],
-
-                    "direction":
-                    signal["direction"],
-
-                    "entry":
-                    signal["entry"],
-
-                    "current_price":
-                    current_price,
-
-                    "entry_valid":
-                    inside_zone,
-                }
-
-                # =================================================
-                # ONLY TRACK AS OPEN IF BOT SAID ENTER NOW
-                # =================================================
-
-                if inside_zone:
-
-                    existing_trade = (
-                        state["trades"]
-                        .get(symbol)
-                    )
-
-                    # Do not silently overwrite
-                    # an already open trade.
-                    if existing_trade:
-
-                        if (
-                            existing_trade["direction"]
-                            != signal["direction"]
-                        ):
-                            send_telegram(
-                                f"⚠️ {symbol} — "
-                                "OPPOSITE SIGNAL\n\n"
-                                f"Existing tracked trade: "
-                                f"{existing_trade['direction']}\n"
-                                f"New signal: "
-                                f"{signal['direction']}\n\n"
-                                "The existing trade is still "
-                                "marked OPEN.\n"
-                                "No automatic replacement was made."
-                            )
-
-                    else:
-                        open_trade(
-                            state,
-                            symbol,
-                            signal,
-                            current_price,
-                            candle_time,
-                        )
-
-                        print(
-                            f"{symbol}: "
-                            "new trade tracked."
-                        )
-
-                else:
-                    print(
-                        f"{symbol}: "
-                        "signal sent but entry "
-                        "was outside zone; "
-                        "not tracked as open."
-                    )
-
-        except Exception as e:
-            print(
-                f"{symbol}: ERROR -> {e}"
-            )
-
-    clean_signal_history(
-        state
-    )
-
-    save_state(
-        state
-    )
-
-    print(
-        "\nScan completed."
-    )
 
 
 if __name__ == "__main__":
