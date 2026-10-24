@@ -46,5 +46,9 @@
       "signal_candle": "2026-10-24T18:45:00+00:00"
     }
   },
-  "last_closed_trade": {}
+  "last_closed_trade": {},
+  "last_signal": {},
+  "watch_setup": {},
+  "active_trade": {},
+  "closed": []
 }
