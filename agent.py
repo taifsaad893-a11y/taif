@@ -20,12 +20,10 @@ MARKETS = {
         "ticker": "GC=F",
         "weekdays_only": True,
     },
-
     "NASDAQ": {
         "ticker": "NQ=F",
         "weekdays_only": True,
     },
-
     "BTCUSD": {
         "ticker": "BTC-USD",
         "weekdays_only": False,
@@ -36,20 +34,23 @@ TIMEFRAME = "15m"
 PERIOD = "5d"
 
 ATR_PERIOD = 14
-
 MIN_RR = 1.5
 
+# SAME STRATEGY SETTINGS
 BREAK_BUFFER_ATR = 0.08
 SL_BUFFER_ATR = 0.15
 
-# Latest closed candle should not be too old.
-# 45 minutes gives some tolerance for delayed Yahoo data.
+# Entry zone around confirmation close.
+# This does NOT change setup conditions.
+ENTRY_ZONE_ATR = 0.10
+
 MAX_CANDLE_AGE_MINUTES = 45
 
 STATE_FILE = "state.json"
 
 LONDON_TZ = ZoneInfo("Europe/London")
 NY_TZ = ZoneInfo("America/New_York")
+BAGHDAD_TZ = ZoneInfo("Asia/Baghdad")
 
 
 # =========================================================
@@ -82,7 +83,6 @@ def send_telegram(message):
 def load_state():
 
     try:
-
         with open(STATE_FILE, "r") as f:
             return json.load(f)
 
@@ -93,7 +93,6 @@ def load_state():
 def save_state(state):
 
     with open(STATE_FILE, "w") as f:
-
         json.dump(
             state,
             f,
@@ -117,7 +116,7 @@ def signal_id(
 
 
 # =========================================================
-# DATA
+# MARKET DATA
 # =========================================================
 
 def get_data(ticker):
@@ -133,16 +132,10 @@ def get_data(ticker):
     if df.empty:
         return None
 
-    if isinstance(
-        df.columns,
-        pd.MultiIndex,
-    ):
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
 
-        df.columns = (
-            df.columns.get_level_values(0)
-        )
-
-    required_columns = [
+    required = [
         "Open",
         "High",
         "Low",
@@ -150,19 +143,12 @@ def get_data(ticker):
         "Volume",
     ]
 
-    for column in required_columns:
+    for column in required:
 
         if column not in df.columns:
-
-            print(
-                f"Missing column: {column}"
-            )
-
             return None
 
-    df = df[
-        required_columns
-    ].copy()
+    df = df[required].copy()
 
     df.dropna(
         subset=[
@@ -175,31 +161,19 @@ def get_data(ticker):
     )
 
     if df.index.tz is None:
-
-        df.index = (
-            df.index.tz_localize("UTC")
-        )
+        df.index = df.index.tz_localize("UTC")
 
     else:
-
-        df.index = (
-            df.index.tz_convert("UTC")
-        )
+        df.index = df.index.tz_convert("UTC")
 
     return df
 
 
 # =========================================================
-# CLOSED CANDLE
+# CLOSED CANDLES
 # =========================================================
 
 def remove_active_candle(df):
-
-    """
-    yfinance may include the currently-forming 15m candle.
-
-    We only want candles that should already be closed.
-    """
 
     if df is None or df.empty:
         return df
@@ -210,16 +184,12 @@ def remove_active_candle(df):
         minutes=15
     )
 
-    closed_mask = (
+    mask = (
         df.index + candle_duration
         <= now
     )
 
-    closed_df = df[
-        closed_mask
-    ].copy()
-
-    return closed_df
+    return df[mask].copy()
 
 
 # =========================================================
@@ -231,12 +201,6 @@ def candle_is_fresh(candle_time):
     now = datetime.now(
         timezone.utc
     )
-
-    if candle_time.tzinfo is None:
-
-        candle_time = (
-            candle_time.tz_localize("UTC")
-        )
 
     candle_close_time = (
         candle_time
@@ -261,7 +225,7 @@ def candle_is_fresh(candle_time):
 
 
 # =========================================================
-# MARKET DAY FILTER
+# WEEKDAY FILTER
 # =========================================================
 
 def market_allowed_today(
@@ -271,14 +235,9 @@ def market_allowed_today(
     if not weekdays_only:
         return True
 
-    now_utc = datetime.now(
+    weekday = datetime.now(
         timezone.utc
-    )
-
-    weekday = now_utc.weekday()
-
-    # Monday = 0
-    # Friday = 4
+    ).weekday()
 
     return weekday <= 4
 
@@ -320,13 +279,11 @@ def calculate_atr(
         ranges.max(axis=1)
     )
 
-    atr = (
+    return (
         true_range
         .rolling(period)
         .mean()
     )
-
-    return atr
 
 
 # =========================================================
@@ -355,7 +312,6 @@ def volume_score(df):
         or
         average_volume <= 0
     ):
-
         return False
 
     return (
@@ -371,21 +327,10 @@ def volume_score(df):
 
 def london_range(df):
 
-    """
-    London opening range:
-
-    08:00 -> 12:00
-    Europe/London local time.
-
-    Signals are only allowed AFTER 12:00 London.
-    """
-
     local = df.copy()
 
-    local.index = (
-        local.index.tz_convert(
-            LONDON_TZ
-        )
+    local.index = local.index.tz_convert(
+        LONDON_TZ
     )
 
     now = datetime.now(
@@ -395,9 +340,6 @@ def london_range(df):
     )
 
     today = now.date()
-
-    # Do not trade this range
-    # until it is complete.
 
     if now.hour < 12:
         return None
@@ -413,20 +355,16 @@ def london_range(df):
     if session.empty:
         return None
 
-    high = float(
-        session["High"].max()
-    )
-
-    low = float(
-        session["Low"].min()
-    )
-
     return {
         "name": "London",
 
-        "high": high,
+        "high": float(
+            session["High"].max()
+        ),
 
-        "low": low,
+        "low": float(
+            session["Low"].min()
+        ),
 
         "timezone": LONDON_TZ,
 
@@ -442,21 +380,10 @@ def london_range(df):
 
 def new_york_range(df):
 
-    """
-    New York opening range:
-
-    09:30 -> 11:00
-    America/New_York local time.
-
-    Signals are only allowed AFTER 11:00 New York.
-    """
-
     local = df.copy()
 
-    local.index = (
-        local.index.tz_convert(
-            NY_TZ
-        )
+    local.index = local.index.tz_convert(
+        NY_TZ
     )
 
     now = datetime.now(
@@ -506,20 +433,16 @@ def new_york_range(df):
     if session.empty:
         return None
 
-    high = float(
-        session["High"].max()
-    )
-
-    low = float(
-        session["Low"].min()
-    )
-
     return {
         "name": "New York",
 
-        "high": high,
+        "high": float(
+            session["High"].max()
+        ),
 
-        "low": low,
+        "low": float(
+            session["Low"].min()
+        ),
 
         "timezone": NY_TZ,
 
@@ -530,7 +453,7 @@ def new_york_range(df):
 
 
 # =========================================================
-# MAKE SURE CANDLE IS AFTER SESSION
+# CANDLE AFTER SESSION
 # =========================================================
 
 def candle_after_session(
@@ -538,32 +461,26 @@ def candle_after_session(
     session,
 ):
 
-    local_time = (
-        candle_time.tz_convert(
-            session["timezone"]
-        )
-    )
-
-    end_minutes = (
-        session["end_hour"] * 60
-        +
-        session["end_minute"]
+    local_time = candle_time.tz_convert(
+        session["timezone"]
     )
 
     candle_minutes = (
         local_time.hour * 60
-        +
-        local_time.minute
+        + local_time.minute
     )
 
-    return (
-        candle_minutes
-        >= end_minutes
+    end_minutes = (
+        session["end_hour"] * 60
+        + session["end_minute"]
     )
+
+    return candle_minutes >= end_minutes
 
 
 # =========================================================
 # SIGNAL DETECTION
+# STRATEGY CONDITIONS UNCHANGED
 # =========================================================
 
 def detect_signal(
@@ -583,7 +500,6 @@ def detect_signal(
         candle_time,
         session,
     ):
-
         return None
 
     atr_series = calculate_atr(
@@ -600,7 +516,6 @@ def detect_signal(
         or
         atr <= 0
     ):
-
         return None
 
     current = df.iloc[-1]
@@ -644,8 +559,8 @@ def detect_signal(
         * SL_BUFFER_ATR
     )
 
-    strong_volume = (
-        volume_score(df)
+    strong_volume = volume_score(
+        df
     )
 
 
@@ -653,8 +568,7 @@ def detect_signal(
     # LONG BREAKOUT
     # =====================================================
 
-    bullish_breakout = (
-
+    if (
         close
         >
         session_high
@@ -666,40 +580,20 @@ def detect_signal(
         <=
         session_high
         + break_buffer
-    )
-
-    if bullish_breakout:
+    ):
 
         entry = close
 
         stop = min(
-
-            session_high
-            - sl_buffer,
-
-            low
-            - sl_buffer,
+            session_high - sl_buffer,
+            low - sl_buffer,
         )
 
-        risk = (
-            entry
-            - stop
-        )
+        risk = entry - stop
 
         if risk > 0:
 
-            tp1 = (
-                entry
-                + risk * 1.5
-            )
-
-            tp2 = (
-                entry
-                + risk * 2.0
-            )
-
             return {
-
                 "setup":
                 f"{session['name']} Breakout",
 
@@ -713,10 +607,10 @@ def detect_signal(
                 stop,
 
                 "tp1":
-                tp1,
+                entry + risk * 1.5,
 
                 "tp2":
-                tp2,
+                entry + risk * 2.0,
 
                 "rr":
                 2.0,
@@ -724,9 +618,12 @@ def detect_signal(
                 "volume":
                 strong_volume,
 
+                "atr":
+                atr,
+
                 "reason":
                 (
-                    f"15m candle closed above "
+                    "15m candle closed above "
                     f"{session['name']} High."
                 ),
             }
@@ -736,8 +633,7 @@ def detect_signal(
     # SHORT BREAKOUT
     # =====================================================
 
-    bearish_breakout = (
-
+    if (
         close
         <
         session_low
@@ -749,40 +645,20 @@ def detect_signal(
         >=
         session_low
         - break_buffer
-    )
-
-    if bearish_breakout:
+    ):
 
         entry = close
 
         stop = max(
-
-            session_low
-            + sl_buffer,
-
-            high
-            + sl_buffer,
+            session_low + sl_buffer,
+            high + sl_buffer,
         )
 
-        risk = (
-            stop
-            - entry
-        )
+        risk = stop - entry
 
         if risk > 0:
 
-            tp1 = (
-                entry
-                - risk * 1.5
-            )
-
-            tp2 = (
-                entry
-                - risk * 2.0
-            )
-
             return {
-
                 "setup":
                 f"{session['name']} Breakout",
 
@@ -796,10 +672,10 @@ def detect_signal(
                 stop,
 
                 "tp1":
-                tp1,
+                entry - risk * 1.5,
 
                 "tp2":
-                tp2,
+                entry - risk * 2.0,
 
                 "rr":
                 2.0,
@@ -807,9 +683,12 @@ def detect_signal(
                 "volume":
                 strong_volume,
 
+                "atr":
+                atr,
+
                 "reason":
                 (
-                    f"15m candle closed below "
+                    "15m candle closed below "
                     f"{session['name']} Low."
                 ),
             }
@@ -820,7 +699,6 @@ def detect_signal(
     # =====================================================
 
     swept_high = (
-
         high
         >
         session_high
@@ -834,16 +712,9 @@ def detect_signal(
     )
 
     bearish_confirmation = (
-
-        close
-        <
-        open_price
-
+        close < open_price
         or
-
-        close
-        <
-        prev_close
+        close < prev_close
     )
 
     if (
@@ -859,25 +730,11 @@ def detect_signal(
             + sl_buffer
         )
 
-        risk = (
-            stop
-            - entry
-        )
+        risk = stop - entry
 
         if risk > 0:
 
-            tp1 = (
-                entry
-                - risk * 1.5
-            )
-
-            tp2 = (
-                entry
-                - risk * 2.0
-            )
-
             return {
-
                 "setup":
                 f"{session['name']} High Sweep",
 
@@ -891,16 +748,19 @@ def detect_signal(
                 stop,
 
                 "tp1":
-                tp1,
+                entry - risk * 1.5,
 
                 "tp2":
-                tp2,
+                entry - risk * 2.0,
 
                 "rr":
                 2.0,
 
                 "volume":
                 strong_volume,
+
+                "atr":
+                atr,
 
                 "reason":
                 (
@@ -916,7 +776,6 @@ def detect_signal(
     # =====================================================
 
     swept_low = (
-
         low
         <
         session_low
@@ -930,16 +789,9 @@ def detect_signal(
     )
 
     bullish_confirmation = (
-
-        close
-        >
-        open_price
-
+        close > open_price
         or
-
-        close
-        >
-        prev_close
+        close > prev_close
     )
 
     if (
@@ -955,25 +807,11 @@ def detect_signal(
             - sl_buffer
         )
 
-        risk = (
-            entry
-            - stop
-        )
+        risk = entry - stop
 
         if risk > 0:
 
-            tp1 = (
-                entry
-                + risk * 1.5
-            )
-
-            tp2 = (
-                entry
-                + risk * 2.0
-            )
-
             return {
-
                 "setup":
                 f"{session['name']} Low Sweep",
 
@@ -987,16 +825,19 @@ def detect_signal(
                 stop,
 
                 "tp1":
-                tp1,
+                entry + risk * 1.5,
 
                 "tp2":
-                tp2,
+                entry + risk * 2.0,
 
                 "rr":
                 2.0,
 
                 "volume":
                 strong_volume,
+
+                "atr":
+                atr,
 
                 "reason":
                 (
@@ -1017,13 +858,8 @@ def get_score(signal):
 
     score = 70
 
-    # Volume improves score.
-    # It does NOT block a trade.
-
     if signal["volume"]:
         score += 10
-
-    # Sweeps get small bonus.
 
     if "Sweep" in signal["setup"]:
         score += 5
@@ -1038,76 +874,214 @@ def get_score(signal):
 
 
 # =========================================================
-# TELEGRAM SIGNAL
+# ENTRY ZONE
+# =========================================================
+
+def calculate_entry_zone(signal):
+
+    entry = signal["entry"]
+    atr = signal["atr"]
+
+    zone_size = (
+        atr
+        * ENTRY_ZONE_ATR
+    )
+
+    zone_low = (
+        entry
+        - zone_size
+    )
+
+    zone_high = (
+        entry
+        + zone_size
+    )
+
+    return (
+        zone_low,
+        zone_high,
+    )
+
+
+# =========================================================
+# CURRENT PRICE
+# =========================================================
+
+def get_current_price(ticker):
+
+    try:
+
+        live = yf.download(
+            ticker,
+            period="1d",
+            interval="1m",
+            progress=False,
+            auto_adjust=False,
+        )
+
+        if live.empty:
+            return None
+
+        if isinstance(
+            live.columns,
+            pd.MultiIndex,
+        ):
+
+            live.columns = (
+                live.columns
+                .get_level_values(0)
+            )
+
+        if "Close" not in live.columns:
+            return None
+
+        live = live.dropna(
+            subset=["Close"]
+        )
+
+        if live.empty:
+            return None
+
+        return float(
+            live["Close"].iloc[-1]
+        )
+
+    except Exception as e:
+
+        print(
+            f"Current price error: {e}"
+        )
+
+        return None
+
+
+# =========================================================
+# ENTRY STATUS
+# =========================================================
+
+def get_entry_status(
+    current_price,
+    zone_low,
+    zone_high,
+):
+
+    if current_price is None:
+
+        return (
+            "⚠️ Current price unavailable\n"
+            "Check the market price before entry."
+        )
+
+    if (
+        zone_low
+        <= current_price
+        <= zone_high
+    ):
+
+        return (
+            "✅ PRICE INSIDE ENTRY ZONE\n"
+            "⚡ ENTER NOW"
+        )
+
+    return (
+        "⛔ PRICE OUTSIDE ENTRY ZONE\n"
+        "➡️ DO NOT CHASE — WAIT"
+    )
+
+
+# =========================================================
+# FORMAT SIGNAL
 # =========================================================
 
 def format_signal(
     symbol,
     signal,
     candle_time,
+    current_price,
 ):
 
     if signal["direction"] == "LONG":
-
         icon = "🟢"
 
     else:
-
         icon = "🔴"
-
 
     score = get_score(
         signal
     )
 
+    volume_text = (
+        "Strong"
+        if signal["volume"]
+        else "Normal"
+    )
 
-    if signal["volume"]:
+    zone_low, zone_high = (
+        calculate_entry_zone(
+            signal
+        )
+    )
 
-        volume_text = "Strong"
-
-    else:
-
-        volume_text = "Normal"
-
+    status = get_entry_status(
+        current_price,
+        zone_low,
+        zone_high,
+    )
 
     baghdad_time = (
         candle_time
-        .tz_convert(
-            ZoneInfo("Asia/Baghdad")
-        )
+        .tz_convert(BAGHDAD_TZ)
         .strftime(
             "%Y-%m-%d %H:%M"
         )
     )
 
+    if current_price is None:
+
+        current_text = (
+            "Unavailable"
+        )
+
+    else:
+
+        current_text = (
+            f"{current_price:.2f}"
+        )
 
     return (
-
         f"{icon} {symbol} — "
         f"{signal['direction']}\n\n"
+
+        f"{status}\n\n"
 
         f"Setup: "
         f"{signal['setup']}\n"
 
         f"Timeframe: 15m\n"
 
-        f"Candle: "
+        f"Confirmation candle: "
         f"{baghdad_time} Baghdad\n\n"
 
-        f"Entry: "
-        f"{signal['entry']:.2f}\n"
+        f"📍 ENTRY ZONE\n"
+        f"{zone_low:.2f} — "
+        f"{zone_high:.2f}\n\n"
 
-        f"Stop Loss: "
+        f"Current price: "
+        f"{current_text}\n"
+
+        f"Confirmation close: "
+        f"{signal['entry']:.2f}\n\n"
+
+        f"🛑 Stop Loss: "
         f"{signal['stop']:.2f}\n\n"
 
-        f"TP1: "
+        f"🎯 TP1: "
         f"{signal['tp1']:.2f}\n"
 
-        f"TP2: "
+        f"🎯 TP2: "
         f"{signal['tp2']:.2f}\n\n"
 
         f"R:R TP1: 1:1.5\n"
-
         f"R:R TP2: 1:2.0\n\n"
 
         f"Volume: "
@@ -1122,15 +1096,10 @@ def format_signal(
 
 
 # =========================================================
-# CLEAN OLD STATE
+# CLEAN STATE
 # =========================================================
 
 def clean_state(state):
-
-    """
-    Prevent state.json from growing forever.
-    Keep roughly the newest 500 signals.
-    """
 
     if len(state) <= 500:
         return state
@@ -1139,9 +1108,9 @@ def clean_state(state):
         state.items()
     )
 
-    items = items[-500:]
-
-    return dict(items)
+    return dict(
+        items[-500:]
+    )
 
 
 # =========================================================
@@ -1151,33 +1120,20 @@ def clean_state(state):
 def main():
 
     print(
-        "================================"
-    )
-
-    print(
         "Session Market Scanner"
     )
-
-    print(
-        "================================"
-    )
-
 
     state = load_state()
 
 
     for symbol, config in MARKETS.items():
 
-        print()
-
         print(
-            f"Checking {symbol}..."
+            f"\nChecking {symbol}..."
         )
 
 
-        # =============================================
         # WEEKDAY FILTER
-        # =============================================
 
         if not market_allowed_today(
             config["weekdays_only"]
@@ -1185,7 +1141,7 @@ def main():
 
             print(
                 f"{symbol}: "
-                "market disabled on weekend."
+                "disabled on weekend."
             )
 
             continue
@@ -1193,14 +1149,11 @@ def main():
 
         try:
 
-            # =========================================
-            # GET DATA
-            # =========================================
+            # DATA
 
             df = get_data(
                 config["ticker"]
             )
-
 
             if (
                 df is None
@@ -1210,20 +1163,17 @@ def main():
 
                 print(
                     f"{symbol}: "
-                    "insufficient market data."
+                    "insufficient data."
                 )
 
                 continue
 
 
-            # =========================================
             # CLOSED CANDLES ONLY
-            # =========================================
 
             df = remove_active_candle(
                 df
             )
-
 
             if (
                 df is None
@@ -1244,16 +1194,7 @@ def main():
             )
 
 
-            print(
-                f"{symbol}: "
-                f"latest closed candle = "
-                f"{candle_time}"
-            )
-
-
-            # =========================================
-            # FRESHNESS FILTER
-            # =========================================
+            # FRESHNESS
 
             if not candle_is_fresh(
                 candle_time
@@ -1261,62 +1202,24 @@ def main():
 
                 print(
                     f"{symbol}: "
-                    "latest candle is stale. "
-                    "Skipping."
+                    "stale candle."
                 )
 
                 continue
 
 
-            # =========================================
-            # BUILD SESSION RANGES
-            # =========================================
-
-            london = (
-                london_range(df)
-            )
-
-            new_york = (
-                new_york_range(df)
-            )
-
+            # SESSION RANGES
 
             sessions = [
-                london,
-                new_york,
+                london_range(df),
+                new_york_range(df),
             ]
 
 
-            available_sessions = [
-                session
-                for session in sessions
-                if session is not None
-            ]
+            for session in sessions:
 
-
-            if not available_sessions:
-
-                print(
-                    f"{symbol}: "
-                    "no completed session "
-                    "range available yet."
-                )
-
-                continue
-
-
-            # =========================================
-            # ANALYZE
-            # =========================================
-
-            for session in available_sessions:
-
-                print(
-                    f"{symbol}: analyzing "
-                    f"{session['name']} "
-                    f"High={session['high']:.2f} "
-                    f"Low={session['low']:.2f}"
-                )
+                if session is None:
+                    continue
 
 
                 signal = detect_signal(
@@ -1326,19 +1229,8 @@ def main():
 
 
                 if signal is None:
-
-                    print(
-                        f"{symbol}: "
-                        f"no {session['name']} "
-                        "setup."
-                    )
-
                     continue
 
-
-                # =====================================
-                # RR FILTER
-                # =====================================
 
                 if (
                     signal["rr"]
@@ -1346,53 +1238,49 @@ def main():
                     MIN_RR
                 ):
 
-                    print(
-                        f"{symbol}: "
-                        "RR below minimum."
-                    )
-
                     continue
 
 
-                # =====================================
-                # DUPLICATE FILTER
-                # =====================================
-
                 sid = signal_id(
-
                     symbol,
-
                     signal["setup"],
-
                     signal["direction"],
-
                     candle_time,
                 )
 
+
+                # DON'T SEND SAME SETUP TWICE
 
                 if sid in state:
 
                     print(
                         f"{symbol}: "
-                        "duplicate signal ignored."
+                        "duplicate ignored."
                     )
 
                     continue
 
 
-                # =====================================
-                # SEND TELEGRAM
-                # =====================================
+                # GET LATEST PRICE RIGHT BEFORE ALERT
 
-                message = format_signal(
-
-                    symbol,
-
-                    signal,
-
-                    candle_time,
+                current_price = (
+                    get_current_price(
+                        config["ticker"]
+                    )
                 )
 
+
+                # CREATE MESSAGE
+
+                message = format_signal(
+                    symbol,
+                    signal,
+                    candle_time,
+                    current_price,
+                )
+
+
+                # SEND
 
                 send_telegram(
                     message
@@ -1418,21 +1306,14 @@ def main():
                     "entry":
                     signal["entry"],
 
-                    "stop":
-                    signal["stop"],
-
-                    "tp1":
-                    signal["tp1"],
-
-                    "tp2":
-                    signal["tp2"],
+                    "current_price":
+                    current_price,
                 }
 
 
                 print(
                     f"{symbol}: "
-                    f"{signal['direction']} "
-                    "signal sent to Telegram."
+                    "signal sent."
                 )
 
 
@@ -1443,10 +1324,6 @@ def main():
             )
 
 
-    # =============================================
-    # SAVE STATE
-    # =============================================
-
     state = clean_state(
         state
     )
@@ -1455,18 +1332,10 @@ def main():
         state
     )
 
-
-    print()
-
     print(
-        "Scan completed."
+        "\nScan completed."
     )
 
 
-# =========================================================
-# START
-# =========================================================
-
 if __name__ == "__main__":
-
     main()
