@@ -48,9 +48,37 @@
   },
   "last_closed_trade": {},
   "last_signal": {
-    "BTCUSD": "BTCUSD:SWEEP:S:2026-10-24T22:45:00+00:00"
+    "BTCUSD": "BTCUSD:BREAKOUT:L:2026-10-24T23:45:00+00:00"
   },
-  "watch_setup": {},
+  "watch_setup": {
+    "BTCUSD": {
+      "id": "BTCUSD:BREAKOUT:L:2026-10-24T23:45:00+00:00",
+      "key": "BTCUSD",
+      "side": 1,
+      "setup_name": "Breakout",
+      "grade": "B",
+      "score": 6.4,
+      "plan": {
+        "entry": 80758.703125,
+        "zone_low": 80744.32763392857,
+        "zone_high": 80763.49495535715,
+        "stop": 80506.6868861607,
+        "tps": [
+          81136.72748325893,
+          81262.73560267859,
+          81514.75184151788
+        ],
+        "risk": 252.01623883929278,
+        "atr15": 119.79575892857143,
+        "retest_confirm_buffer": 5.989787946428572
+      },
+      "confirmation_end": "2026-10-24T23:45:00+00:00",
+      "created_at": "2026-10-24T23:52:26.340508+00:00",
+      "expires_at": "2026-10-25T00:45:00+00:00",
+      "touched": false,
+      "touch_time": null
+    }
+  },
   "active_trade": {},
   "closed": []
 }
