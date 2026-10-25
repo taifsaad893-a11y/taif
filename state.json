@@ -48,9 +48,29 @@
   },
   "last_closed_trade": {},
   "last_signal": {
-    "BTCUSD": "BTCUSD:SWEEP:S:2026-10-25T02:45:00+00:00"
+    "BTCUSD": "BTCUSD:BREAKOUT:S:2026-10-25T05:45:00+00:00"
   },
   "watch_setup": {},
-  "active_trade": {},
+  "active_trade": {
+    "BTCUSD": {
+      "id": "BTCUSD:BREAKOUT:S:2026-10-25T05:45:00+00:00",
+      "side": -1,
+      "setup": "Breakout RETEST",
+      "entry": 80446.09375,
+      "stop": 80734.6771484375,
+      "tps": [
+        80059.21474609374,
+        79924.12226562499,
+        79653.93730468748
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-10-25T05:55:13.907682+00:00",
+      "state": "OPEN"
+    }
+  },
   "closed": []
 }
