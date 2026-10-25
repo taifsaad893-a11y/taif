@@ -5,7 +5,6 @@ import time
 import requests
 import yfinance as yf
 import pandas as pd
-
 from zoneinfo import ZoneInfo
 
 
@@ -15,50 +14,41 @@ from zoneinfo import ZoneInfo
 
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
+TWELVE_DATA_API_KEY = os.environ["TWELVE_DATA_API_KEY"]
 
 MARKETS = {
     "XAUUSD": {
-        "ticker": "GC=F",
+        "source": "twelve",
+        "symbol": "XAU/USD",
         "weekdays_only": True,
     },
     "NASDAQ": {
+        "source": "yahoo",
         "ticker": "NQ=F",
         "weekdays_only": True,
     },
     "BTCUSD": {
-        "ticker": "BTC-USD",
-        "binance": "BTCUSDT",
+        "source": "binance",
+        "symbol": "BTCUSDT",
         "weekdays_only": False,
     },
     "ETHUSD": {
-        "ticker": "ETH-USD",
-        "binance": "ETHUSDT",
+        "source": "binance",
+        "symbol": "ETHUSDT",
         "weekdays_only": False,
     },
     "SOLUSD": {
-        "ticker": "SOL-USD",
-        "binance": "SOLUSDT",
+        "source": "binance",
+        "symbol": "SOLUSDT",
         "weekdays_only": False,
     },
 }
 
-TIMEFRAME = "15m"
-
 ATR_PERIOD = 14
 MIN_RR = 1.5
 
-
-# =========================================================
-# SCORE
-# =========================================================
-
 A_SCORE = 7.5
 B_SCORE = 6.0
-
-
-# =========================================================
-# 15M SETUP SETTINGS
-# =========================================================
 
 BREAK_BUFFER_ATR = 0.05
 SWEEP_BUFFER_ATR = 0.02
@@ -67,28 +57,13 @@ SL_BUFFER_ATR = 0.15
 ENTRY_BACK_ATR = 0.12
 ENTRY_FRONT_ATR = 0.04
 
-
-# =========================================================
-# TIMING
-# =========================================================
-
 MAX_ENTER_AGE_SECONDS = 120
 WATCH_EXPIRY_MINUTES = 60
 
 RETEST_CONFIRM_ATR = 0.05
 MAX_RETEST_CHASE_R = 0.25
 
-
-# =========================================================
-# HIGHER TIMEFRAME
-# =========================================================
-
 HTF_ZONE_DISTANCE_ATR_1H = 0.45
-
-
-# =========================================================
-# SCANNER LOOP
-# =========================================================
 
 SCAN_INTERVAL_SECONDS = int(
     os.environ.get(
@@ -113,9 +88,11 @@ BAGHDAD = ZoneInfo(
     "Asia/Baghdad"
 )
 
+SESSION = requests.Session()
+
 
 # =========================================================
-# HELPERS
+# BASIC HELPERS
 # =========================================================
 
 def now_utc():
@@ -152,15 +129,18 @@ def fmt(x):
     return f"{x:.4f}"
 
 
-def send_telegram(text):
-    url = (
-        "https://api.telegram.org/"
-        f"bot{TELEGRAM_BOT_TOKEN}/"
-        "sendMessage"
-    )
+# =========================================================
+# TELEGRAM
+# =========================================================
 
-    response = requests.post(
-        url,
+def send_telegram(text):
+
+    response = SESSION.post(
+        (
+            "https://api.telegram.org/"
+            f"bot{TELEGRAM_BOT_TOKEN}/"
+            "sendMessage"
+        ),
         json={
             "chat_id": TELEGRAM_CHAT_ID,
             "text": text,
@@ -186,12 +166,15 @@ def default_state():
 
 
 def load_state():
+
     try:
+
         with open(
             STATE_FILE,
             "r",
             encoding="utf-8",
         ) as f:
+
             st = json.load(f)
 
         if not isinstance(
@@ -204,32 +187,23 @@ def load_state():
         FileNotFoundError,
         json.JSONDecodeError,
     ):
+
         return default_state()
 
-    st.setdefault(
-        "last_signal",
-        {},
-    )
+    defaults = default_state()
 
-    st.setdefault(
-        "watch_setup",
-        {},
-    )
+    for key, value in defaults.items():
 
-    st.setdefault(
-        "active_trade",
-        {},
-    )
-
-    st.setdefault(
-        "closed",
-        [],
-    )
+        st.setdefault(
+            key,
+            value,
+        )
 
     return st
 
 
 def save_state(st):
+
     temp_file = (
         STATE_FILE + ".tmp"
     )
@@ -239,6 +213,7 @@ def save_state(st):
         "w",
         encoding="utf-8",
     ) as f:
+
         json.dump(
             st,
             f,
@@ -260,10 +235,13 @@ def market_allowed(
     cfg,
     now,
 ):
+
     if not cfg["weekdays_only"]:
         return True
 
-    return now.weekday() < 5
+    return (
+        now.weekday() < 5
+    )
 
 
 # =========================================================
@@ -271,18 +249,21 @@ def market_allowed(
 # =========================================================
 
 def normalize_yf(df):
+
     if (
         df is None
         or df.empty
     ):
+
         raise RuntimeError(
-            "Empty market data"
+            "Empty Yahoo data"
         )
 
     if isinstance(
         df.columns,
         pd.MultiIndex,
     ):
+
         df.columns = [
             column[0]
             for column in df.columns
@@ -298,16 +279,16 @@ def normalize_yf(df):
         }
     )
 
-    required = [
-        "o",
-        "h",
-        "l",
-        "c",
-        "v",
-    ]
-
     df = (
-        df[required]
+        df[
+            [
+                "o",
+                "h",
+                "l",
+                "c",
+                "v",
+            ]
+        ]
         .dropna(
             subset=[
                 "o",
@@ -319,16 +300,10 @@ def normalize_yf(df):
         .copy()
     )
 
-    if df.index.tz is None:
-        df.index = pd.to_datetime(
-            df.index,
-            utc=True,
-        )
-    else:
-        df.index = (
-            pd.to_datetime(df.index)
-            .tz_convert("UTC")
-        )
+    df.index = pd.to_datetime(
+        df.index,
+        utc=True,
+    )
 
     df["v"] = (
         pd.to_numeric(
@@ -345,6 +320,7 @@ def closed_only(
     df,
     minutes,
 ):
+
     now = now_utc()
 
     candle_end = (
@@ -360,10 +336,42 @@ def closed_only(
 
 
 # =========================================================
-# GET FRAMES
+# VALIDATE FRAMES
 # =========================================================
 
-def get_frames(ticker):
+def validate_frames(
+    d15,
+    d1,
+    d4,
+):
+
+    if (
+        len(d15) < 80
+        or len(d1) < 60
+        or len(d4) < 20
+    ):
+
+        raise RuntimeError(
+            "Not enough closed candles: "
+            f"15m={len(d15)} "
+            f"1h={len(d1)} "
+            f"4h={len(d4)}"
+        )
+
+    return {
+        "15m": d15,
+        "1h": d1,
+        "4h": d4,
+    }
+
+
+# =========================================================
+# YAHOO FRAMES - NASDAQ
+# =========================================================
+
+def yahoo_frames(
+    ticker,
+):
 
     d15 = yf.download(
         ticker,
@@ -424,20 +432,406 @@ def get_frames(ticker):
         240,
     )
 
-    if (
-        len(d15) < 80
-        or len(d1) < 60
-        or len(d4) < 20
-    ):
-        raise RuntimeError(
-            "Not enough closed candles"
+    return validate_frames(
+        d15,
+        d1,
+        d4,
+    )
+
+
+# =========================================================
+# BINANCE DATA
+# =========================================================
+
+def binance_klines(
+    symbol,
+    interval,
+    limit=300,
+    start_ms=None,
+):
+
+    params = {
+        "symbol": symbol,
+        "interval": interval,
+        "limit": limit,
+    }
+
+    if start_ms is not None:
+
+        params["startTime"] = (
+            start_ms
         )
 
-    return {
-        "15m": d15,
-        "1h": d1,
-        "4h": d4,
-    }
+    response = SESSION.get(
+        "https://api.binance.com/api/v3/klines",
+        params=params,
+        timeout=15,
+    )
+
+    response.raise_for_status()
+
+    raw = response.json()
+
+    rows = []
+
+    for candle in raw:
+
+        rows.append(
+            {
+                "time": pd.to_datetime(
+                    int(candle[0]),
+                    unit="ms",
+                    utc=True,
+                ),
+
+                "end": pd.to_datetime(
+                    int(candle[6]),
+                    unit="ms",
+                    utc=True,
+                ),
+
+                "o": float(
+                    candle[1]
+                ),
+
+                "h": float(
+                    candle[2]
+                ),
+
+                "l": float(
+                    candle[3]
+                ),
+
+                "c": float(
+                    candle[4]
+                ),
+
+                "v": float(
+                    candle[5]
+                ),
+            }
+        )
+
+    if not rows:
+        return pd.DataFrame()
+
+    df = pd.DataFrame(
+        rows
+    )
+
+    return (
+        df.set_index(
+            "time"
+        )
+        .sort_index()
+    )
+
+
+def binance_frames(
+    symbol,
+):
+
+    now = now_utc()
+
+    d15 = binance_klines(
+        symbol,
+        "15m",
+        300,
+    )
+
+    d1 = binance_klines(
+        symbol,
+        "1h",
+        300,
+    )
+
+    if (
+        d15.empty
+        or d1.empty
+    ):
+
+        raise RuntimeError(
+            "Empty Binance data"
+        )
+
+    d15 = (
+        d15[
+            d15["end"] <= now
+        ][
+            [
+                "o",
+                "h",
+                "l",
+                "c",
+                "v",
+            ]
+        ]
+        .copy()
+    )
+
+    d1 = (
+        d1[
+            d1["end"] <= now
+        ][
+            [
+                "o",
+                "h",
+                "l",
+                "c",
+                "v",
+            ]
+        ]
+        .copy()
+    )
+
+    d4 = (
+        d1.resample(
+            "4h",
+            label="left",
+            closed="left",
+        )
+        .agg(
+            {
+                "o": "first",
+                "h": "max",
+                "l": "min",
+                "c": "last",
+                "v": "sum",
+            }
+        )
+        .dropna()
+    )
+
+    d4 = closed_only(
+        d4,
+        240,
+    )
+
+    return validate_frames(
+        d15,
+        d1,
+        d4,
+    )
+
+
+# =========================================================
+# TWELVE DATA
+# =========================================================
+
+def twelve_request(
+    endpoint,
+    params,
+):
+
+    params = dict(
+        params
+    )
+
+    params[
+        "apikey"
+    ] = TWELVE_DATA_API_KEY
+
+    response = SESSION.get(
+        (
+            "https://api.twelvedata.com/"
+            f"{endpoint}"
+        ),
+        params=params,
+        timeout=20,
+    )
+
+    response.raise_for_status()
+
+    data = response.json()
+
+    if (
+        isinstance(
+            data,
+            dict,
+        )
+        and data.get(
+            "status"
+        ) == "error"
+    ):
+
+        raise RuntimeError(
+            data.get(
+                "message",
+                str(data),
+            )
+        )
+
+    return data
+
+
+def twelve_series(
+    symbol,
+    interval,
+    outputsize,
+):
+
+    data = twelve_request(
+        "time_series",
+        {
+            "symbol": symbol,
+            "interval": interval,
+            "outputsize": outputsize,
+            "timezone": "UTC",
+            "format": "JSON",
+        },
+    )
+
+    values = (
+        data.get(
+            "values"
+        )
+        or []
+    )
+
+    if not values:
+
+        raise RuntimeError(
+            "Empty Twelve Data: "
+            f"{symbol} {interval}"
+        )
+
+    rows = []
+
+    for candle in values:
+
+        rows.append(
+            {
+                "time": pd.to_datetime(
+                    candle["datetime"],
+                    utc=True,
+                ),
+
+                "o": float(
+                    candle["open"]
+                ),
+
+                "h": float(
+                    candle["high"]
+                ),
+
+                "l": float(
+                    candle["low"]
+                ),
+
+                "c": float(
+                    candle["close"]
+                ),
+
+                "v": float(
+                    candle.get(
+                        "volume"
+                    )
+                    or 0.0
+                ),
+            }
+        )
+
+    df = pd.DataFrame(
+        rows
+    )
+
+    return (
+        df.set_index(
+            "time"
+        )
+        .sort_index()
+    )
+
+
+# =========================================================
+# XAUUSD SPOT FRAMES
+# =========================================================
+
+def twelve_frames(
+    symbol,
+):
+
+    d15 = twelve_series(
+        symbol,
+        "15min",
+        300,
+    )
+
+    d15 = closed_only(
+        d15,
+        15,
+    )
+
+    d1 = twelve_series(
+        symbol,
+        "1h",
+        300,
+    )
+
+    d1 = closed_only(
+        d1,
+        60,
+    )
+
+    # Build 4H locally from 1H.
+    d4 = (
+        d1.resample(
+            "4h",
+            label="left",
+            closed="left",
+        )
+        .agg(
+            {
+                "o": "first",
+                "h": "max",
+                "l": "min",
+                "c": "last",
+                "v": "sum",
+            }
+        )
+        .dropna()
+    )
+
+    d4 = closed_only(
+        d4,
+        240,
+    )
+
+    return validate_frames(
+        d15,
+        d1,
+        d4,
+    )
+
+
+# =========================================================
+# UNIFIED FRAMES
+# =========================================================
+
+def get_frames(
+    key,
+    cfg,
+):
+
+    source = cfg[
+        "source"
+    ]
+
+    if source == "binance":
+
+        return binance_frames(
+            cfg["symbol"]
+        )
+
+    if source == "twelve":
+
+        return twelve_frames(
+            cfg["symbol"]
+        )
+
+    return yahoo_frames(
+        cfg["ticker"]
+    )
 
 
 # =========================================================
@@ -449,29 +843,55 @@ def get_live_price(
     cfg,
 ):
 
-    if cfg.get("binance"):
+    source = cfg[
+        "source"
+    ]
 
-        try:
-            response = requests.get(
-                "https://api.binance.com/api/v3/ticker/price",
-                params={
-                    "symbol": cfg["binance"],
-                },
-                timeout=10,
+    if source == "binance":
+
+        response = SESSION.get(
+            (
+                "https://api.binance.com/"
+                "api/v3/ticker/price"
+            ),
+            params={
+                "symbol": cfg[
+                    "symbol"
+                ],
+            },
+            timeout=10,
+        )
+
+        response.raise_for_status()
+
+        return float(
+            response.json()[
+                "price"
+            ]
+        )
+
+    if source == "twelve":
+
+        data = twelve_request(
+            "price",
+            {
+                "symbol": cfg[
+                    "symbol"
+                ],
+                "format": "JSON",
+            },
+        )
+
+        if "price" not in data:
+
+            raise RuntimeError(
+                "Twelve Data live "
+                "price unavailable"
             )
 
-            response.raise_for_status()
-
-            return float(
-                response.json()["price"]
-            )
-
-        except Exception as error:
-            print(
-                key,
-                "Binance live price error:",
-                error,
-            )
+        return float(
+            data["price"]
+        )
 
     df = yf.download(
         cfg["ticker"],
@@ -486,11 +906,6 @@ def get_live_price(
         df
     )
 
-    if df.empty:
-        raise RuntimeError(
-            "Live price unavailable"
-        )
-
     return float(
         df["c"].iloc[-1]
     )
@@ -504,6 +919,7 @@ def ema(
     series,
     period,
 ):
+
     return series.ewm(
         span=period,
         adjust=False,
@@ -514,6 +930,7 @@ def atr(
     df,
     period=ATR_PERIOD,
 ):
+
     previous_close = (
         df["c"].shift(1)
     )
@@ -547,24 +964,23 @@ def atr(
 # =========================================================
 
 def trend(df):
-    close = df["c"]
 
     ema20 = float(
         ema(
-            close,
+            df["c"],
             20,
         ).iloc[-1]
     )
 
     ema50 = float(
         ema(
-            close,
+            df["c"],
             50,
         ).iloc[-1]
     )
 
     price = float(
-        close.iloc[-1]
+        df["c"].iloc[-1]
     )
 
     if (
@@ -583,20 +999,22 @@ def trend(df):
 
 
 def trend_name(value):
-    names = {
+
+    return {
         1: "BULLISH",
         -1: "BEARISH",
         0: "RANGE",
-    }
-
-    return names[value]
+    }[value]
 
 
 # =========================================================
 # VOLUME
 # =========================================================
 
-def volume_info(d15):
+def volume_info(
+    d15,
+):
+
     volume = (
         d15["v"]
         .astype(float)
@@ -608,14 +1026,18 @@ def volume_info(d15):
         .mean()
     )
 
+    # Spot gold may not have useful centralized volume.
     if average <= 0:
+
         return {
             "ratio": None,
             "label": "N/A",
         }
 
     ratio = (
-        float(volume.iloc[-1])
+        float(
+            volume.iloc[-1]
+        )
         / average
     )
 
@@ -645,15 +1067,25 @@ def cisd_confirm(
     d15,
     side,
 ):
-    x = d15.tail(12)
+
+    x = d15.tail(
+        12
+    )
 
     if len(x) < 6:
         return False
 
-    opens = x["o"].values
-    closes = x["c"].values
+    opens = (
+        x["o"].values
+    )
 
-    start = len(x) - 2
+    closes = (
+        x["c"].values
+    )
+
+    start = (
+        len(x) - 2
+    )
 
     stop = max(
         0,
@@ -667,12 +1099,14 @@ def cisd_confirm(
     ):
 
         if side == 1:
+
             opposite = (
                 closes[i]
                 < opens[i]
             )
 
         else:
+
             opposite = (
                 closes[i]
                 > opens[i]
@@ -685,6 +1119,7 @@ def cisd_confirm(
             )
 
             if side == 1:
+
                 return bool(
                     closes[-1]
                     > level
@@ -699,13 +1134,14 @@ def cisd_confirm(
 
 
 # =========================================================
-# HIGHER TIMEFRAME LEVELS
+# HTF LEVELS
 # =========================================================
 
 def recent_levels(
     df,
     lookback,
 ):
+
     x = df.tail(
         lookback
     )
@@ -714,6 +1150,7 @@ def recent_levels(
         "support": float(
             x["l"].min()
         ),
+
         "resistance": float(
             x["h"].max()
         ),
@@ -730,14 +1167,26 @@ def htf_context(
     price,
 ):
 
-    d1 = frames["1h"]
-    d4 = frames["4h"]
+    d1 = frames[
+        "1h"
+    ]
 
-    trend_1h = trend(d1)
-    trend_4h = trend(d4)
+    d4 = frames[
+        "4h"
+    ]
+
+    trend_1h = trend(
+        d1
+    )
+
+    trend_4h = trend(
+        d4
+    )
 
     atr_1h = float(
-        atr(d1).iloc[-1]
+        atr(
+            d1
+        ).iloc[-1]
     )
 
     if (
@@ -746,6 +1195,7 @@ def htf_context(
         )
         or atr_1h <= 0
     ):
+
         atr_1h = max(
             price * 0.002,
             1e-9,
@@ -764,8 +1214,12 @@ def htf_context(
     if side == 1:
 
         levels = [
-            levels_1h["support"],
-            levels_4h["support"],
+            levels_1h[
+                "support"
+            ],
+            levels_4h[
+                "support"
+            ],
         ]
 
         distances = [
@@ -773,20 +1227,6 @@ def htf_context(
             for level in levels
             if level <= price
         ]
-
-        nearest = (
-            min(distances)
-            if distances
-            else float("inf")
-        )
-
-        near_zone = (
-            nearest
-            <= (
-                HTF_ZONE_DISTANCE_ATR_1H
-                * atr_1h
-            )
-        )
 
         zone_text = (
             f"Support 1H "
@@ -798,8 +1238,12 @@ def htf_context(
     else:
 
         levels = [
-            levels_1h["resistance"],
-            levels_4h["resistance"],
+            levels_1h[
+                "resistance"
+            ],
+            levels_4h[
+                "resistance"
+            ],
         ]
 
         distances = [
@@ -808,20 +1252,6 @@ def htf_context(
             if level >= price
         ]
 
-        nearest = (
-            min(distances)
-            if distances
-            else float("inf")
-        )
-
-        near_zone = (
-            nearest
-            <= (
-                HTF_ZONE_DISTANCE_ATR_1H
-                * atr_1h
-            )
-        )
-
         zone_text = (
             f"Resistance 1H "
             f"{fmt(levels_1h['resistance'])}"
@@ -829,27 +1259,44 @@ def htf_context(
             f"{fmt(levels_4h['resistance'])}"
         )
 
-    aligned_1h = (
-        trend_1h == side
-    )
-
-    aligned_4h = (
-        trend_4h == side
-    )
-
-    strong_against = (
-        trend_1h == -side
-        and trend_4h == -side
+    nearest = (
+        min(
+            distances
+        )
+        if distances
+        else float(
+            "inf"
+        )
     )
 
     return {
         "t1": trend_1h,
         "t4": trend_4h,
-        "aligned_1h": aligned_1h,
-        "aligned_4h": aligned_4h,
-        "near_zone": near_zone,
-        "strong_against": strong_against,
-        "zone_text": zone_text,
+
+        "aligned_1h": (
+            trend_1h == side
+        ),
+
+        "aligned_4h": (
+            trend_4h == side
+        ),
+
+        "near_zone": (
+            nearest
+            <= (
+                HTF_ZONE_DISTANCE_ATR_1H
+                * atr_1h
+            )
+        ),
+
+        "strong_against": (
+            trend_1h == -side
+            and trend_4h == -side
+        ),
+
+        "zone_text": (
+            zone_text
+        ),
     }
 
 
@@ -920,7 +1367,9 @@ def build_trade_plan(
         if setup_type == "SWEEP":
 
             stop = (
-                float(last["l"])
+                float(
+                    last["l"]
+                )
                 - SL_BUFFER_ATR
                 * atr15
             )
@@ -929,7 +1378,9 @@ def build_trade_plan(
 
             stop = (
                 min(
-                    float(last["l"]),
+                    float(
+                        last["l"]
+                    ),
                     reference_level,
                 )
                 - SL_BUFFER_ATR
@@ -945,7 +1396,9 @@ def build_trade_plan(
         if setup_type == "SWEEP":
 
             stop = (
-                float(last["h"])
+                float(
+                    last["h"]
+                )
                 + SL_BUFFER_ATR
                 * atr15
             )
@@ -954,7 +1407,9 @@ def build_trade_plan(
 
             stop = (
                 max(
-                    float(last["h"]),
+                    float(
+                        last["h"]
+                    ),
                     reference_level,
                 )
                 + SL_BUFFER_ATR
@@ -966,31 +1421,33 @@ def build_trade_plan(
         )
 
     if (
-        not math.isfinite(risk)
+        not math.isfinite(
+            risk
+        )
         or risk <= 0
     ):
         return None
 
-    target_1 = (
-        entry
-        + side
-        * risk
-        * MIN_RR
-    )
-
-    target_2 = (
-        entry
-        + side
-        * risk
-        * 2.0
-    )
-
-    target_3 = (
-        entry
-        + side
-        * risk
-        * 3.0
-    )
+    targets = [
+        (
+            entry
+            + side
+            * risk
+            * MIN_RR
+        ),
+        (
+            entry
+            + side
+            * risk
+            * 2.0
+        ),
+        (
+            entry
+            + side
+            * risk
+            * 3.0
+        ),
+    ]
 
     zone_low, zone_high = (
         calculate_entry_zone(
@@ -1002,18 +1459,31 @@ def build_trade_plan(
 
     return {
         "entry": entry,
-        "zone_low": zone_low,
-        "zone_high": zone_high,
-        "stop": float(stop),
+
+        "zone_low": (
+            zone_low
+        ),
+
+        "zone_high": (
+            zone_high
+        ),
+
+        "stop": float(
+            stop
+        ),
 
         "tps": [
-            float(target_1),
-            float(target_2),
-            float(target_3),
+            float(x)
+            for x in targets
         ],
 
-        "risk": float(risk),
-        "atr15": float(atr15),
+        "risk": float(
+            risk
+        ),
+
+        "atr15": float(
+            atr15
+        ),
 
         "retest_confirm_buffer": float(
             RETEST_CONFIRM_ATR
@@ -1023,7 +1493,7 @@ def build_trade_plan(
 
 
 # =========================================================
-# DETECT SETUP
+# DETECT SIGNAL
 # =========================================================
 
 def detect_signal(
@@ -1031,30 +1501,42 @@ def detect_signal(
     frames,
 ):
 
-    d15 = frames["15m"]
+    d15 = frames[
+        "15m"
+    ]
 
-    last = d15.iloc[-1]
+    last = (
+        d15.iloc[-1]
+    )
 
     previous = (
         d15.iloc[-21:-1]
     )
 
     atr15 = float(
-        atr(d15).iloc[-1]
+        atr(
+            d15
+        ).iloc[-1]
     )
 
     if (
-        not math.isfinite(atr15)
+        not math.isfinite(
+            atr15
+        )
         or atr15 <= 0
     ):
         return None
 
     previous_high = float(
-        previous["h"].max()
+        previous[
+            "h"
+        ].max()
     )
 
     previous_low = float(
-        previous["l"].min()
+        previous[
+            "l"
+        ].min()
     )
 
     close = float(
@@ -1076,7 +1558,8 @@ def detect_signal(
             - SWEEP_BUFFER_ATR
             * atr15
         )
-        and close > previous_low
+        and close
+        > previous_low
     )
 
     sweep_high = (
@@ -1086,7 +1569,8 @@ def detect_signal(
             + SWEEP_BUFFER_ATR
             * atr15
         )
-        and close < previous_high
+        and close
+        < previous_high
     )
 
     break_up = (
@@ -1134,8 +1618,12 @@ def detect_signal(
     elif break_up:
 
         side = 1
-        setup_type = "BREAKOUT"
-        setup_name = "Breakout"
+        setup_type = (
+            "BREAKOUT"
+        )
+        setup_name = (
+            "Breakout"
+        )
         reference_level = (
             previous_high
         )
@@ -1144,14 +1632,19 @@ def detect_signal(
     elif break_down:
 
         side = -1
-        setup_type = "BREAKOUT"
-        setup_name = "Breakout"
+        setup_type = (
+            "BREAKOUT"
+        )
+        setup_name = (
+            "Breakout"
+        )
         reference_level = (
             previous_low
         )
         score = 6.3
 
     else:
+
         return None
 
     volume = volume_info(
@@ -1169,27 +1662,46 @@ def detect_signal(
         side,
     )
 
-    if htf["aligned_1h"]:
+    if htf[
+        "aligned_1h"
+    ]:
         score += 0.8
 
-    if htf["aligned_4h"]:
+    if htf[
+        "aligned_4h"
+    ]:
         score += 0.5
 
-    if htf["near_zone"]:
+    if htf[
+        "near_zone"
+    ]:
         score += 0.8
 
-    if htf["strong_against"]:
+    if htf[
+        "strong_against"
+    ]:
         score -= 1.2
 
-    if volume["ratio"] is not None:
+    if volume[
+        "ratio"
+    ] is not None:
 
-        if volume["ratio"] >= 1.50:
+        if volume[
+            "ratio"
+        ] >= 1.50:
+
             score += 0.8
 
-        elif volume["ratio"] >= 1.10:
+        elif volume[
+            "ratio"
+        ] >= 1.10:
+
             score += 0.4
 
-        elif volume["ratio"] < 0.65:
+        elif volume[
+            "ratio"
+        ] < 0.65:
+
             score -= 0.4
 
     if cisd:
@@ -1208,14 +1720,19 @@ def detect_signal(
 
     if (
         score >= A_SCORE
-        and not htf["strong_against"]
+        and not htf[
+            "strong_against"
+        ]
     ):
+
         grade = "A"
 
     elif score >= B_SCORE:
+
         grade = "B"
 
     else:
+
         return None
 
     plan = build_trade_plan(
@@ -1251,20 +1768,30 @@ def detect_signal(
         "id": signal_id,
         "key": key,
         "side": side,
-        "setup_type": setup_type,
-        "setup_name": setup_name,
+
+        "setup_type": (
+            setup_type
+        ),
+
+        "setup_name": (
+            setup_name
+        ),
+
         "score": score,
         "grade": grade,
         "volume": volume,
         "htf": htf,
         "cisd": cisd,
         "plan": plan,
-        "confirmation_end": candle_end,
+
+        "confirmation_end": (
+            candle_end
+        ),
     }
 
 
 # =========================================================
-# INITIAL ENTRY DECISION
+# INITIAL ENTRY STATUS
 # =========================================================
 
 def initial_entry_status(
@@ -1273,23 +1800,33 @@ def initial_entry_status(
     now,
 ):
 
-    plan = signal["plan"]
+    plan = signal[
+        "plan"
+    ]
 
     age_seconds = max(
         0.0,
         (
             now
-            - signal["confirmation_end"]
+            - signal[
+                "confirmation_end"
+            ]
         ).total_seconds(),
     )
 
     inside = (
-        plan["zone_low"]
+        plan[
+            "zone_low"
+        ]
         <= live_price
-        <= plan["zone_high"]
+        <= plan[
+            "zone_high"
+        ]
     )
 
-    if signal["grade"] == "B":
+    if signal[
+        "grade"
+    ] == "B":
 
         return {
             "status": (
@@ -1297,7 +1834,9 @@ def initial_entry_status(
             ),
             "tradable": False,
             "watch": True,
-            "age_seconds": age_seconds,
+            "age_seconds": (
+                age_seconds
+            ),
         }
 
     if (
@@ -1307,17 +1846,24 @@ def initial_entry_status(
     ):
 
         return {
-            "status": "ENTER NOW",
+            "status": (
+                "ENTER NOW"
+            ),
             "tradable": True,
             "watch": False,
-            "age_seconds": age_seconds,
+            "age_seconds": (
+                age_seconds
+            ),
         }
 
     if inside:
+
         status = (
             "WAIT FOR RETEST CONFIRMATION"
         )
+
     else:
+
         status = (
             "WAIT FOR RETEST — DO NOT CHASE"
         )
@@ -1326,12 +1872,14 @@ def initial_entry_status(
         "status": status,
         "tradable": False,
         "watch": True,
-        "age_seconds": age_seconds,
+        "age_seconds": (
+            age_seconds
+        ),
     }
 
 
 # =========================================================
-# STORE WATCH SETUP
+# WATCH SETUP
 # =========================================================
 
 def signal_to_watch(
@@ -1340,26 +1888,51 @@ def signal_to_watch(
     now,
 ):
 
-    plan = signal["plan"]
+    plan = signal[
+        "plan"
+    ]
 
     inside = (
-        plan["zone_low"]
+        plan[
+            "zone_low"
+        ]
         <= live_price
-        <= plan["zone_high"]
+        <= plan[
+            "zone_high"
+        ]
     )
 
     return {
-        "id": signal["id"],
-        "key": signal["key"],
-        "side": signal["side"],
-        "setup_name": signal["setup_name"],
-        "grade": signal["grade"],
-        "score": signal["score"],
+        "id": signal[
+            "id"
+        ],
+
+        "key": signal[
+            "key"
+        ],
+
+        "side": signal[
+            "side"
+        ],
+
+        "setup_name": signal[
+            "setup_name"
+        ],
+
+        "grade": signal[
+            "grade"
+        ],
+
+        "score": signal[
+            "score"
+        ],
+
         "plan": plan,
 
         "confirmation_end": (
-            signal["confirmation_end"]
-            .isoformat()
+            signal[
+                "confirmation_end"
+            ].isoformat()
         ),
 
         "created_at": (
@@ -1367,7 +1940,9 @@ def signal_to_watch(
         ),
 
         "expires_at": (
-            signal["confirmation_end"]
+            signal[
+                "confirmation_end"
+            ]
             + pd.Timedelta(
                 minutes=(
                     WATCH_EXPIRY_MINUTES
@@ -1388,14 +1963,16 @@ def signal_to_watch(
 
 
 # =========================================================
-# RETEST CONFIRM LEVEL
+# RETEST CONFIRMATION
 # =========================================================
 
 def retest_confirmation_level(
     watch,
 ):
 
-    plan = watch["plan"]
+    plan = watch[
+        "plan"
+    ]
 
     buffer_value = (
         plan[
@@ -1403,38 +1980,47 @@ def retest_confirmation_level(
         ]
     )
 
-    if watch["side"] == 1:
+    if watch[
+        "side"
+    ] == 1:
 
         return (
-            plan["zone_high"]
+            plan[
+                "zone_high"
+            ]
             + buffer_value
         )
 
     return (
-        plan["zone_low"]
+        plan[
+            "zone_low"
+        ]
         - buffer_value
     )
 
 
 # =========================================================
-# OPEN PAPER TRADE
+# TRADE CREATION
 # =========================================================
 
-def open_trade(
-    st,
-    signal,
+def make_trade(
+    signal_id,
+    side,
+    setup,
+    entry_type,
     live_price,
+    plan,
     now,
 ):
 
-    plan = signal["plan"]
-    key = signal["key"]
+    return {
+        "id": signal_id,
+        "side": side,
+        "setup": setup,
 
-    st["active_trade"][key] = {
-        "id": signal["id"],
-        "side": signal["side"],
-        "setup": signal["setup_name"],
-        "entry_type": "DIRECT",
+        "entry_type": (
+            entry_type
+        ),
 
         "entry": float(
             live_price
@@ -1450,7 +2036,9 @@ def open_trade(
 
         "tps": [
             float(x)
-            for x in plan["tps"]
+            for x in plan[
+                "tps"
+            ]
         ],
 
         "hits": [
@@ -1463,10 +2051,38 @@ def open_trade(
             now.isoformat()
         ),
 
-        "last_tracking_bar": None,
+        # Start tracking after entry.
+        # Do not replay pre-entry minute data.
+        "last_tracking_bar": (
+            now.floor(
+                "min"
+            ).isoformat()
+        ),
 
         "state": "OPEN",
     }
+
+
+def open_trade(
+    st,
+    signal,
+    live_price,
+    now,
+):
+
+    st[
+        "active_trade"
+    ][
+        signal["key"]
+    ] = make_trade(
+        signal["id"],
+        signal["side"],
+        signal["setup_name"],
+        "DIRECT",
+        live_price,
+        signal["plan"],
+        now,
+    )
 
 
 def open_trade_from_watch(
@@ -1476,55 +2092,28 @@ def open_trade_from_watch(
     now,
 ):
 
-    plan = watch["plan"]
-    key = watch["key"]
-
-    st["active_trade"][key] = {
-        "id": watch["id"],
-        "side": watch["side"],
-
-        "setup": (
-            watch["setup_name"]
+    st[
+        "active_trade"
+    ][
+        watch["key"]
+    ] = make_trade(
+        watch["id"],
+        watch["side"],
+        (
+            watch[
+                "setup_name"
+            ]
             + " RETEST"
         ),
-
-        "entry_type": "RETEST",
-
-        "entry": float(
-            live_price
-        ),
-
-        "stop": float(
-            plan["stop"]
-        ),
-
-        "initial_stop": float(
-            plan["stop"]
-        ),
-
-        "tps": [
-            float(x)
-            for x in plan["tps"]
-        ],
-
-        "hits": [
-            False,
-            False,
-            False,
-        ],
-
-        "opened_at": (
-            now.isoformat()
-        ),
-
-        "last_tracking_bar": None,
-
-        "state": "OPEN",
-    }
+        "RETEST",
+        live_price,
+        watch["plan"],
+        now,
+    )
 
 
 # =========================================================
-# PROCESS WAITING RETEST
+# PROCESS WATCH
 # =========================================================
 
 def process_watch(
@@ -1535,24 +2124,35 @@ def process_watch(
 ):
 
     watch = (
-        st["watch_setup"]
-        .get(key)
+        st[
+            "watch_setup"
+        ].get(
+            key
+        )
     )
 
     if not watch:
         return None, False
 
-    plan = watch["plan"]
+    plan = watch[
+        "plan"
+    ]
 
     side = int(
-        watch["side"]
+        watch[
+            "side"
+        ]
     )
 
     if now > stamp(
-        watch["expires_at"]
+        watch[
+            "expires_at"
+        ]
     ):
 
-        st["watch_setup"].pop(
+        st[
+            "watch_setup"
+        ].pop(
             key,
             None,
         )
@@ -1563,19 +2163,25 @@ def process_watch(
 
         stop_breached = (
             live_price
-            <= plan["stop"]
+            <= plan[
+                "stop"
+            ]
         )
 
     else:
 
         stop_breached = (
             live_price
-            >= plan["stop"]
+            >= plan[
+                "stop"
+            ]
         )
 
     if stop_breached:
 
-        st["watch_setup"].pop(
+        st[
+            "watch_setup"
+        ].pop(
             key,
             None,
         )
@@ -1594,9 +2200,13 @@ def process_watch(
         return message, False
 
     inside = (
-        plan["zone_low"]
+        plan[
+            "zone_low"
+        ]
         <= live_price
-        <= plan["zone_high"]
+        <= plan[
+            "zone_high"
+        ]
     )
 
     if (
@@ -1607,15 +2217,17 @@ def process_watch(
         )
     ):
 
-        watch["touched"] = True
+        watch[
+            "touched"
+        ] = True
 
-        watch["touch_time"] = (
-            now.isoformat()
-        )
+        watch[
+            "touch_time"
+        ] = now.isoformat()
 
-        st["watch_setup"][key] = (
-            watch
-        )
+        st[
+            "watch_setup"
+        ][key] = watch
 
         message = (
             f"🟡 {key} | RETEST IN ENTRY ZONE\n"
@@ -1667,7 +2279,9 @@ def process_watch(
     if side == 1:
 
         zone_edge = (
-            plan["zone_high"]
+            plan[
+                "zone_high"
+            ]
         )
 
         move_from_zone = (
@@ -1678,7 +2292,9 @@ def process_watch(
     else:
 
         zone_edge = (
-            plan["zone_low"]
+            plan[
+                "zone_low"
+            ]
         )
 
         move_from_zone = (
@@ -1688,17 +2304,27 @@ def process_watch(
 
     max_chase = (
         MAX_RETEST_CHASE_R
-        * plan["risk"]
+        * plan[
+            "risk"
+        ]
     )
 
-    if move_from_zone > max_chase:
+    if (
+        move_from_zone
+        > max_chase
+    ):
 
-        watch["touched"] = False
-        watch["touch_time"] = None
+        watch[
+            "touched"
+        ] = False
 
-        st["watch_setup"][key] = (
-            watch
-        )
+        watch[
+            "touch_time"
+        ] = None
+
+        st[
+            "watch_setup"
+        ][key] = watch
 
         message = (
             f"⚠️ {key} | RETEST MOVED TOO FAR\n"
@@ -1717,7 +2343,9 @@ def process_watch(
 
         return message, False
 
-    st["watch_setup"].pop(
+    st[
+        "watch_setup"
+    ].pop(
         key,
         None,
     )
@@ -1729,17 +2357,21 @@ def process_watch(
         now,
     )
 
-    current_risk = abs(
-        live_price
-        - plan["stop"]
+    current_risk = max(
+        abs(
+            live_price
+            - plan[
+                "stop"
+            ]
+        ),
+        1e-9,
     )
-
-    if current_risk <= 0:
-        current_risk = 1e-9
 
     rr_tp1 = (
         abs(
-            plan["tps"][0]
+            plan[
+                "tps"
+            ][0]
             - live_price
         )
         / current_risk
@@ -1757,7 +2389,8 @@ def process_watch(
         f"TP1: {fmt(plan['tps'][0])}\n"
         f"TP2: {fmt(plan['tps'][1])}\n"
         f"TP3: {fmt(plan['tps'][2])}\n"
-        f"R:R TO TP1: {rr_tp1:.2f}R\n"
+        f"R:R TO TP1: "
+        f"{rr_tp1:.2f}R\n"
         f"\n"
         f"SETUP ID: {watch['id']}"
     )
@@ -1766,7 +2399,7 @@ def process_watch(
 
 
 # =========================================================
-# CLOSE PAPER TRADE
+# CLOSE TRADE
 # =========================================================
 
 def close_trade(
@@ -1778,8 +2411,11 @@ def close_trade(
 ):
 
     trade = (
-        st["active_trade"]
-        .get(key)
+        st[
+            "active_trade"
+        ].get(
+            key
+        )
     )
 
     if not trade:
@@ -1789,34 +2425,42 @@ def close_trade(
         trade
     )
 
-    closed_trade["state"] = (
-        "CLOSED"
+    closed_trade.update(
+        {
+            "state": "CLOSED",
+
+            "exit_reason": (
+                reason
+            ),
+
+            "exit_price": float(
+                exit_price
+            ),
+
+            "closed_at": (
+                stamp(
+                    now
+                ).isoformat()
+            ),
+        }
     )
 
-    closed_trade["exit_reason"] = (
-        reason
-    )
-
-    closed_trade["exit_price"] = (
-        float(exit_price)
-    )
-
-    closed_trade["closed_at"] = (
-        stamp(now).isoformat()
-    )
-
-    st["closed"].append(
+    st[
+        "closed"
+    ].append(
         closed_trade
     )
 
-    st["active_trade"].pop(
+    st[
+        "active_trade"
+    ].pop(
         key,
         None,
     )
 
 
 # =========================================================
-# 1M TRACKING DATA
+# TRACKING DATA
 # =========================================================
 
 def get_tracking_bars(
@@ -1825,146 +2469,105 @@ def get_tracking_bars(
     trade,
 ):
 
-    opened_at = stamp(
-        trade["opened_at"]
+    cursor = stamp(
+        trade.get(
+            "last_tracking_bar"
+        )
+        or trade[
+            "opened_at"
+        ]
     )
 
-    # =====================================================
-    # CRYPTO - BINANCE 1M
-    # =====================================================
-
-    if cfg.get("binance"):
-
-        try:
-
-            start_ms = int(
-                opened_at.timestamp()
-                * 1000
-            )
-
-            response = requests.get(
-                "https://api.binance.com/api/v3/klines",
-                params={
-                    "symbol": cfg["binance"],
-                    "interval": "1m",
-                    "startTime": start_ms,
-                    "limit": 1000,
-                },
-                timeout=15,
-            )
-
-            response.raise_for_status()
-
-            raw = response.json()
-
-            rows = []
-
-            for candle in raw:
-
-                candle_start = (
-                    pd.to_datetime(
-                        int(candle[0]),
-                        unit="ms",
-                        utc=True,
-                    )
-                )
-
-                candle_end = (
-                    pd.to_datetime(
-                        int(candle[6]),
-                        unit="ms",
-                        utc=True,
-                    )
-                )
-
-                rows.append(
-                    {
-                        "time": candle_start,
-                        "end": candle_end,
-                        "o": float(candle[1]),
-                        "h": float(candle[2]),
-                        "l": float(candle[3]),
-                        "c": float(candle[4]),
-                    }
-                )
-
-            if rows:
-
-                df = pd.DataFrame(
-                    rows
-                )
-
-                df = (
-                    df.set_index(
-                        "time"
-                    )
-                    .sort_index()
-                )
-
-                return df
-
-        except Exception as error:
-
-            print(
-                key,
-                "Binance tracking error:",
-                error,
-            )
+    source = cfg[
+        "source"
+    ]
 
     # =====================================================
-    # YAHOO 1M FALLBACK
+    # BINANCE CRYPTO
     # =====================================================
 
-    try:
+    if source == "binance":
 
-        df = yf.download(
-            cfg["ticker"],
-            period="1d",
-            interval="1m",
-            progress=False,
-            auto_adjust=False,
-            threads=False,
+        start_ms = int(
+            cursor.timestamp()
+            * 1000
         )
 
-        df = normalize_yf(
-            df
+        return binance_klines(
+            cfg[
+                "symbol"
+            ],
+            "1m",
+            1000,
+            start_ms,
         )
 
-        if df.empty:
-            return pd.DataFrame()
+    # =====================================================
+    # TWELVE DATA XAUUSD
+    # =====================================================
 
-        result = df[
+    if source == "twelve":
+
+        df = twelve_series(
+            cfg[
+                "symbol"
+            ],
+            "1min",
+            30,
+        )
+
+        df[
+            "end"
+        ] = (
+            df.index
+            + pd.Timedelta(
+                minutes=1
+            )
+        )
+
+        return df
+
+    # =====================================================
+    # YAHOO NASDAQ
+    # =====================================================
+
+    df = yf.download(
+        cfg[
+            "ticker"
+        ],
+        period="1d",
+        interval="1m",
+        progress=False,
+        auto_adjust=False,
+        threads=False,
+    )
+
+    df = normalize_yf(
+        df
+    )
+
+    result = (
+        df[
             [
                 "o",
                 "h",
                 "l",
                 "c",
             ]
-        ].copy()
-
-        result["end"] = (
-            result.index
-            + pd.Timedelta(
-                minutes=1
-            )
-        )
-
-        result = result[
-            result["end"]
-            >= opened_at
         ]
+        .copy()
+    )
 
-        return result
-
-    except Exception as error:
-
-        print(
-            key,
-            "1m tracking error:",
-            error,
+    result[
+        "end"
+    ] = (
+        result.index
+        + pd.Timedelta(
+            minutes=1
         )
+    )
 
-        return pd.DataFrame()
+    return result
 
 
 # =========================================================
@@ -1978,7 +2581,11 @@ def trade_header(
 
     direction = (
         "LONG"
-        if int(trade["side"]) == 1
+        if int(
+            trade[
+                "side"
+            ]
+        ) == 1
         else "SHORT"
     )
 
@@ -1987,14 +2594,98 @@ def trade_header(
         f"SETUP: "
         f"{trade.get('setup', '-')}\n"
         f"ENTRY TYPE: "
-        f"{trade.get('entry_type', '-')}\n"
+        f"{trade.get('entry_type', 'LEGACY')}\n"
         f"SETUP ID: "
         f"{trade['id']}"
     )
 
 
 # =========================================================
-# PROCESS ONE 1M BAR
+# STOP TYPE
+# =========================================================
+
+def stop_reason(
+    trade,
+):
+
+    hits = trade.get(
+        "hits",
+        [
+            False,
+            False,
+            False,
+        ],
+    )
+
+    if hits[1]:
+        return "TP1_LOCKED"
+
+    if hits[0]:
+        return "BREAKEVEN"
+
+    return "STOP"
+
+
+def stop_message(
+    key,
+    trade,
+    stop,
+    live_price=None,
+):
+
+    reason = stop_reason(
+        trade
+    )
+
+    if reason == "BREAKEVEN":
+
+        icon = "🟰"
+
+        title = (
+            "BREAKEVEN HIT"
+        )
+
+    elif reason == "TP1_LOCKED":
+
+        icon = "🔒"
+
+        title = (
+            "PROTECTED STOP HIT"
+        )
+
+    else:
+
+        icon = "🛑"
+
+        title = (
+            "STOP LOSS HIT"
+        )
+
+    live_text = ""
+
+    if live_price is not None:
+
+        live_text = (
+            f"\nLIVE: "
+            f"{fmt(live_price)}"
+        )
+
+    return (
+        f"{icon} {key} | {title}\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"{trade_header(key, trade)}\n"
+        f"\n"
+        f"ENTRY: "
+        f"{fmt(trade['entry'])}\n"
+        f"EXIT: "
+        f"{fmt(stop)}"
+        f"{live_text}\n"
+        f"STATUS: CLOSED"
+    )
+
+
+# =========================================================
+# PROCESS CLOSED 1M BAR
 # =========================================================
 
 def process_trade_bar(
@@ -2006,25 +2697,35 @@ def process_trade_bar(
 ):
 
     side = int(
-        trade["side"]
+        trade[
+            "side"
+        ]
     )
 
     high = float(
-        bar["h"]
+        bar[
+            "h"
+        ]
     )
 
     low = float(
-        bar["l"]
+        bar[
+            "l"
+        ]
     )
 
     stop = float(
-        trade["stop"]
+        trade[
+            "stop"
+        ]
     )
 
     targets = list(
         map(
             float,
-            trade["tps"],
+            trade[
+                "tps"
+            ],
         )
     )
 
@@ -2040,7 +2741,11 @@ def process_trade_bar(
     messages = []
 
     # =====================================================
-    # STOP CHECK
+    # STOP FIRST
+    #
+    # If stop + target both appear inside the same 1m bar,
+    # exact tick order is unknown.
+    # Conservative rule = STOP first.
     # =====================================================
 
     if side == 1:
@@ -2057,29 +2762,23 @@ def process_trade_bar(
 
     if stop_hit:
 
+        reason = stop_reason(
+            trade
+        )
+
         close_trade(
             st,
             key,
-            "STOP",
+            reason,
             stop,
             bar_time,
         )
 
         messages.append(
-            (
-                f"🛑 {key} | STOP LOSS HIT\n"
-                f"━━━━━━━━━━━━━━━━━━\n"
-                f"{trade_header(key, trade)}\n"
-                f"\n"
-                f"ENTRY: "
-                f"{fmt(trade['entry'])}\n"
-                f"STOP: "
-                f"{fmt(stop)}\n"
-                f"1M HIGH: "
-                f"{fmt(high)}\n"
-                f"1M LOW: "
-                f"{fmt(low)}\n"
-                f"STATUS: CLOSED"
+            stop_message(
+                key,
+                trade,
+                stop,
             )
         )
 
@@ -2089,7 +2788,7 @@ def process_trade_bar(
         )
 
     # =====================================================
-    # TARGET CHECK
+    # TARGETS
     # =====================================================
 
     for i, target in enumerate(
@@ -2116,15 +2815,24 @@ def process_trade_bar(
 
         hits[i] = True
 
+        # =================================================
         # TP1
+        # =================================================
+
         if i == 0:
 
             old_stop = float(
-                trade["stop"]
+                trade[
+                    "stop"
+                ]
             )
 
-            trade["stop"] = float(
-                trade["entry"]
+            trade[
+                "stop"
+            ] = float(
+                trade[
+                    "entry"
+                ]
             )
 
             messages.append(
@@ -2136,20 +2844,28 @@ def process_trade_bar(
                     f"TP1: "
                     f"{fmt(target)}\n"
                     f"🔒 SL MOVED: "
-                    f"{fmt(old_stop)} → "
+                    f"{fmt(old_stop)}"
+                    f" → "
                     f"{fmt(trade['stop'])}\n"
                     f"STATUS: BREAKEVEN"
                 )
             )
 
+        # =================================================
         # TP2
+        # =================================================
+
         elif i == 1:
 
             old_stop = float(
-                trade["stop"]
+                trade[
+                    "stop"
+                ]
             )
 
-            trade["stop"] = float(
+            trade[
+                "stop"
+            ] = float(
                 targets[0]
             )
 
@@ -2162,14 +2878,18 @@ def process_trade_bar(
                     f"TP2: "
                     f"{fmt(target)}\n"
                     f"🔒 SL MOVED: "
-                    f"{fmt(old_stop)} → "
+                    f"{fmt(old_stop)}"
+                    f" → "
                     f"{fmt(trade['stop'])}\n"
                     f"STATUS: TP1 LOCKED"
                 )
             )
 
+        # =================================================
         # TP3
-        elif i == 2:
+        # =================================================
+
+        else:
 
             close_trade(
                 st,
@@ -2198,7 +2918,9 @@ def process_trade_bar(
                 True,
             )
 
-    trade["hits"] = hits
+    trade[
+        "hits"
+    ] = hits
 
     return (
         messages,
@@ -2219,8 +2941,11 @@ def monitor_open_trade(
 ):
 
     trade = (
-        st["active_trade"]
-        .get(key)
+        st[
+            "active_trade"
+        ].get(
+            key
+        )
     )
 
     if not trade:
@@ -2237,48 +2962,77 @@ def monitor_open_trade(
 
     trade.setdefault(
         "initial_stop",
-        trade["stop"],
-    )
-
-    trade.setdefault(
-        "last_tracking_bar",
-        None,
+        trade[
+            "stop"
+        ],
     )
 
     trade.setdefault(
         "entry_type",
-        "UNKNOWN",
+        "LEGACY",
     )
+
+    # =====================================================
+    # MIGRATION PROTECTION
+    #
+    # Old trade without last_tracking_bar:
+    # start tracking NOW.
+    #
+    # Do NOT replay old historical candles because that can
+    # create a fake retrospective TP1.
+    # =====================================================
+
+    if not trade.get(
+        "last_tracking_bar"
+    ):
+
+        trade[
+            "last_tracking_bar"
+        ] = (
+            now.floor(
+                "min"
+            ).isoformat()
+        )
+
+        st[
+            "active_trade"
+        ][key] = trade
 
     messages = []
 
     # =====================================================
-    # HISTORICAL 1M TRACKING
+    # CLOSED 1M CANDLES
     # =====================================================
 
-    bars = get_tracking_bars(
-        key,
-        cfg,
-        trade,
-    )
+    try:
+
+        bars = get_tracking_bars(
+            key,
+            cfg,
+            trade,
+        )
+
+    except Exception as error:
+
+        print(
+            key,
+            "tracking error:",
+            error,
+        )
+
+        bars = pd.DataFrame()
 
     if not bars.empty:
 
-        opened_at = stamp(
-            trade["opened_at"]
-        )
-
-        last_seen = (
-            stamp(
-                trade["last_tracking_bar"]
-            )
-            if trade.get(
+        last_seen = stamp(
+            trade[
                 "last_tracking_bar"
-            )
-            else None
+            ]
         )
 
-        for ts, bar in bars.iterrows():
+        for ts, bar in (
+            bars.iterrows()
+        ):
 
             ts = stamp(
                 ts
@@ -2287,23 +3041,27 @@ def monitor_open_trade(
             bar_end = stamp(
                 bar.get(
                     "end",
-                    ts
-                    + pd.Timedelta(
-                        minutes=1
+                    (
+                        ts
+                        + pd.Timedelta(
+                            minutes=1
+                        )
                     ),
                 )
             )
 
-            if (
-                bar_end
-                < opened_at
-            ):
+            # =============================================
+            # NEVER process unfinished 1m candle.
+            # =============================================
+
+            if bar_end > now:
                 continue
 
-            if (
-                last_seen is not None
-                and ts <= last_seen
-            ):
+            # =============================================
+            # NEVER process same bar twice.
+            # =============================================
+
+            if ts <= last_seen:
                 continue
 
             bar_messages, closed = (
@@ -2334,10 +3092,14 @@ def monitor_open_trade(
     if key not in st[
         "active_trade"
     ]:
+
         return messages
 
     # =====================================================
-    # LIVE PRICE BACKUP
+    # LIVE PRICE CHECK
+    #
+    # Current live price can trigger immediately.
+    # We DO NOT use unfinished 1m high/low.
     # =====================================================
 
     trade = st[
@@ -2345,11 +3107,15 @@ def monitor_open_trade(
     ][key]
 
     side = int(
-        trade["side"]
+        trade[
+            "side"
+        ]
     )
 
     stop = float(
-        trade["stop"]
+        trade[
+            "stop"
+        ]
     )
 
     if side == 1:
@@ -2366,44 +3132,45 @@ def monitor_open_trade(
 
     if live_stop_hit:
 
+        reason = stop_reason(
+            trade
+        )
+
         close_trade(
             st,
             key,
-            "STOP",
+            reason,
             stop,
             now,
         )
 
         messages.append(
-            (
-                f"🛑 {key} | STOP LOSS HIT\n"
-                f"━━━━━━━━━━━━━━━━━━\n"
-                f"{trade_header(key, trade)}\n"
-                f"\n"
-                f"ENTRY: "
-                f"{fmt(trade['entry'])}\n"
-                f"STOP: "
-                f"{fmt(stop)}\n"
-                f"LIVE: "
-                f"{fmt(live_price)}\n"
-                f"STATUS: CLOSED"
+            stop_message(
+                key,
+                trade,
+                stop,
+                live_price,
             )
         )
 
         return messages
 
     # =====================================================
-    # LIVE TARGET BACKUP
+    # LIVE TARGET CHECK
     # =====================================================
 
     targets = list(
         map(
             float,
-            trade["tps"],
+            trade[
+                "tps"
+            ],
         )
     )
 
-    hits = trade["hits"]
+    hits = trade[
+        "hits"
+    ]
 
     for i, target in enumerate(
         targets
@@ -2431,14 +3198,24 @@ def monitor_open_trade(
 
         hits[i] = True
 
+        # =================================================
+        # TP1
+        # =================================================
+
         if i == 0:
 
             old_stop = float(
-                trade["stop"]
+                trade[
+                    "stop"
+                ]
             )
 
-            trade["stop"] = float(
-                trade["entry"]
+            trade[
+                "stop"
+            ] = float(
+                trade[
+                    "entry"
+                ]
             )
 
             messages.append(
@@ -2452,19 +3229,28 @@ def monitor_open_trade(
                     f"LIVE: "
                     f"{fmt(live_price)}\n"
                     f"🔒 SL MOVED: "
-                    f"{fmt(old_stop)} → "
+                    f"{fmt(old_stop)}"
+                    f" → "
                     f"{fmt(trade['stop'])}\n"
                     f"STATUS: BREAKEVEN"
                 )
             )
 
+        # =================================================
+        # TP2
+        # =================================================
+
         elif i == 1:
 
             old_stop = float(
-                trade["stop"]
+                trade[
+                    "stop"
+                ]
             )
 
-            trade["stop"] = float(
+            trade[
+                "stop"
+            ] = float(
                 targets[0]
             )
 
@@ -2479,13 +3265,18 @@ def monitor_open_trade(
                     f"LIVE: "
                     f"{fmt(live_price)}\n"
                     f"🔒 SL MOVED: "
-                    f"{fmt(old_stop)} → "
+                    f"{fmt(old_stop)}"
+                    f" → "
                     f"{fmt(trade['stop'])}\n"
                     f"STATUS: TP1 LOCKED"
                 )
             )
 
-        elif i == 2:
+        # =================================================
+        # TP3
+        # =================================================
+
+        else:
 
             close_trade(
                 st,
@@ -2511,7 +3302,9 @@ def monitor_open_trade(
 
             return messages
 
-    trade["hits"] = hits
+    trade[
+        "hits"
+    ] = hits
 
     if key in st[
         "active_trade"
@@ -2525,7 +3318,7 @@ def monitor_open_trade(
 
 
 # =========================================================
-# FORMAT INITIAL SIGNAL
+# FORMAT SIGNAL
 # =========================================================
 
 def format_signal(
@@ -2536,17 +3329,30 @@ def format_signal(
 
     side = (
         "LONG"
-        if signal["side"] == 1
+        if signal[
+            "side"
+        ] == 1
         else "SHORT"
     )
 
-    plan = signal["plan"]
-    htf = signal["htf"]
-    volume = signal["volume"]
+    plan = signal[
+        "plan"
+    ]
+
+    htf = signal[
+        "htf"
+    ]
+
+    volume = signal[
+        "volume"
+    ]
 
     confirmation_time = (
-        signal["confirmation_end"]
-        .tz_convert(BAGHDAD)
+        signal[
+            "confirmation_end"
+        ].tz_convert(
+            BAGHDAD
+        )
     )
 
     age_seconds = int(
@@ -2556,27 +3362,19 @@ def format_signal(
     )
 
     volume_text = (
-        volume["label"]
+        volume[
+            "label"
+        ]
     )
 
-    if volume["ratio"] is not None:
+    if volume[
+        "ratio"
+    ] is not None:
 
         volume_text += (
             f" "
             f"({volume['ratio']:.2f}x)"
         )
-
-    near_htf = (
-        "YES"
-        if htf["near_zone"]
-        else "NO"
-    )
-
-    cisd_text = (
-        "YES"
-        if signal["cisd"]
-        else "NO"
-    )
 
     return (
         f"🚨 {signal['key']} {side}\n"
@@ -2621,10 +3419,10 @@ def format_signal(
         f"4H: "
         f"{trend_name(htf['t4'])}\n"
         f"NEAR HTF ZONE: "
-        f"{near_htf}\n"
+        f"{'YES' if htf['near_zone'] else 'NO'}\n"
         f"{htf['zone_text']}\n"
         f"CISD: "
-        f"{cisd_text}\n"
+        f"{'YES' if signal['cisd'] else 'NO'}\n"
         f"\n"
         f"SETUP ID: "
         f"{signal['id']}"
@@ -2650,14 +3448,16 @@ def scan_market(
         return
 
     # =====================================================
-    # DATA
+    # LIVE PRICE FIRST
+    #
+    # Same source is used for each market:
+    #
+    # XAUUSD = Twelve Data
+    # Crypto = Binance
+    # NASDAQ = Yahoo
     # =====================================================
 
     try:
-
-        frames = get_frames(
-            cfg["ticker"]
-        )
 
         live_price = (
             get_live_price(
@@ -2670,7 +3470,7 @@ def scan_market(
 
         print(
             key,
-            "data error:",
+            "live data error:",
             error,
         )
 
@@ -2678,7 +3478,6 @@ def scan_market(
 
     # =====================================================
     # ACTIVE TRADE
-    # DIRECT BREAKOUT + RETEST BOTH TRACKED HERE
     # =====================================================
 
     trade_messages = (
@@ -2691,21 +3490,22 @@ def scan_market(
         )
     )
 
-    for trade_message in (
+    for message in (
         trade_messages
     ):
 
         send_telegram(
-            trade_message
+            message
         )
 
     if key in st[
         "active_trade"
     ]:
+
         return
 
     # =====================================================
-    # OLD SETUP / RETEST
+    # WAITING RETEST
     # =====================================================
 
     watch_message, entered = (
@@ -2729,10 +3529,32 @@ def scan_market(
             "active_trade"
         ]
     ):
+
         return
 
     # =====================================================
-    # NEW 15M SETUP
+    # ANALYSIS DATA
+    # =====================================================
+
+    try:
+
+        frames = get_frames(
+            key,
+            cfg,
+        )
+
+    except Exception as error:
+
+        print(
+            key,
+            "frame data error:",
+            error,
+        )
+
+        return
+
+    # =====================================================
+    # NEW SIGNAL
     # =====================================================
 
     signal = detect_signal(
@@ -2744,14 +3566,23 @@ def scan_market(
         return
 
     if (
-        st["last_signal"].get(key)
-        == signal["id"]
+        st[
+            "last_signal"
+        ].get(
+            key
+        )
+        == signal[
+            "id"
+        ]
     ):
+
         return
 
     st[
         "last_signal"
-    ][key] = signal["id"]
+    ][key] = signal[
+        "id"
+    ]
 
     status = (
         initial_entry_status(
@@ -2777,9 +3608,13 @@ def scan_market(
     # DIRECT ENTRY
     # =====================================================
 
-    if status["tradable"]:
+    if status[
+        "tradable"
+    ]:
 
-        st["watch_setup"].pop(
+        st[
+            "watch_setup"
+        ].pop(
             key,
             None,
         )
@@ -2797,9 +3632,13 @@ def scan_market(
     # WAIT FOR RETEST
     # =====================================================
 
-    if status["watch"]:
+    if status[
+        "watch"
+    ]:
 
-        st["watch_setup"][key] = (
+        st[
+            "watch_setup"
+        ][key] = (
             signal_to_watch(
                 signal,
                 live_price,
@@ -2809,7 +3648,7 @@ def scan_market(
 
 
 # =========================================================
-# ONE FULL SCAN
+# RUN ONCE
 # =========================================================
 
 def run_once():
@@ -2877,8 +3716,10 @@ def main():
 
             sleep_seconds = max(
                 1,
-                SCAN_INTERVAL_SECONDS
-                - spent,
+                (
+                    SCAN_INTERVAL_SECONDS
+                    - spent
+                ),
             )
 
             time.sleep(
