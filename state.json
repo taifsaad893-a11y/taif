@@ -75,8 +75,8 @@
       "confirmation_end": "2026-10-25T00:45:00+00:00",
       "created_at": "2026-10-25T00:45:23.649388+00:00",
       "expires_at": "2026-10-25T01:45:00+00:00",
-      "touched": true,
-      "touch_time": "2026-10-25T00:46:23.649669+00:00"
+      "touched": false,
+      "touch_time": null
     }
   },
   "active_trade": {},
