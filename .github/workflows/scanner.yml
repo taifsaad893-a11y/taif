@@ -22,31 +22,55 @@ jobs:
 
     steps:
 
+      # ===================================================
+      # CHECKOUT
+      # ===================================================
+
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # ===================================================
+      # PYTHON
+      # ===================================================
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
+      # ===================================================
+      # DEPENDENCIES
+      # ===================================================
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Session Scanner
+      # ===================================================
+      # RUN SCANNER
+      # ===================================================
+
+      - name: Run Session Market Scanner
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
 
-          # Scan once every minute inside this workflow run
+          # Run one scan every 60 seconds.
+          # GitHub starts this workflow every 5 minutes,
+          # so each workflow performs 5 scans.
           LOOP_SCANS: "5"
           SCAN_INTERVAL_SECONDS: "60"
 
+          STATE_FILE: "state.json"
+
         run: |
           python agent.py
+
+      # ===================================================
+      # SAVE STATE
+      # ===================================================
 
       - name: Save scanner state
         if: always()
