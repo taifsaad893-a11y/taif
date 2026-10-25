@@ -48,9 +48,37 @@
   },
   "last_closed_trade": {},
   "last_signal": {
-    "BTCUSD": "BTCUSD:SWEEP:S:2026-10-25T00:45:00+00:00"
+    "BTCUSD": "BTCUSD:SWEEP:S:2026-10-25T02:15:00+00:00"
   },
-  "watch_setup": {},
+  "watch_setup": {
+    "BTCUSD": {
+      "id": "BTCUSD:SWEEP:S:2026-10-25T02:15:00+00:00",
+      "key": "BTCUSD",
+      "side": -1,
+      "setup_name": "Liquidity High Sweep",
+      "grade": "B",
+      "score": 7.4,
+      "plan": {
+        "entry": 80754.4921875,
+        "zone_low": 80750.65816964286,
+        "zone_high": 80765.99424107143,
+        "stop": 80887.8697544643,
+        "tps": [
+          80554.42583705357,
+          80487.73705357141,
+          80354.35948660712
+        ],
+        "risk": 133.37756696429278,
+        "atr15": 95.85044642857143,
+        "retest_confirm_buffer": 4.792522321428572
+      },
+      "confirmation_end": "2026-10-25T02:15:00+00:00",
+      "created_at": "2026-10-25T02:15:42.970067+00:00",
+      "expires_at": "2026-10-25T03:15:00+00:00",
+      "touched": false,
+      "touch_time": null
+    }
+  },
   "active_trade": {},
   "closed": []
 }
