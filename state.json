@@ -49,62 +49,66 @@
   "last_closed_trade": {},
   "last_signal": {
     "BTCUSD": "BTCUSD:BREAKOUT:S:2026-10-25T05:45:00+00:00",
-    "ETHUSD": "ETHUSD:SWEEP:S:2026-10-25T15:45:00+00:00",
-    "SOLUSD": "SOLUSD:SWEEP:S:2026-10-25T15:45:00+00:00"
+    "ETHUSD": "ETHUSD:BREAKOUT:L:2026-10-25T17:00:00+00:00",
+    "SOLUSD": "SOLUSD:BREAKOUT:L:2026-10-25T17:00:00+00:00"
   },
   "watch_setup": {
-    "SOLUSD": {
-      "id": "SOLUSD:SWEEP:S:2026-10-25T15:45:00+00:00",
-      "key": "SOLUSD",
-      "side": -1,
-      "setup_name": "Liquidity High Sweep",
-      "grade": "B",
-      "score": 6.9,
-      "plan": {
-        "entry": 101.55999755859375,
-        "zone_low": 101.54536900111607,
-        "zone_high": 101.60388323102678,
-        "stop": 101.79485495431082,
-        "tps": [
-          101.20771146501815,
-          101.09028276715961,
-          100.85542537144254
-        ],
-        "risk": 0.23485739571707143,
-        "atr15": 0.3657139369419643,
-        "retest_confirm_buffer": 0.018285696847098215
-      },
-      "confirmation_end": "2026-10-25T15:45:00+00:00",
-      "created_at": "2026-10-25T15:57:01.301038+00:00",
-      "expires_at": "2026-10-25T16:45:00+00:00",
-      "touched": false,
-      "touch_time": null
-    }
-  },
-  "active_trade": {
     "ETHUSD": {
-      "id": "ETHUSD:SWEEP:S:2026-10-25T15:45:00+00:00",
-      "side": -1,
-      "setup": "Liquidity High Sweep RETEST",
-      "entry_type": "RETEST",
-      "entry": 2342.85009765625,
-      "stop": 2348.07302507673,
-      "initial_stop": 2348.07302507673,
-      "tps": [
-        2336.9901938302173,
-        2334.7736275809148,
-        2330.3404950823096
-      ],
-      "hits": [
-        false,
-        false,
-        false
-      ],
-      "opened_at": "2026-10-25T16:33:19.434599+00:00",
-      "last_tracking_bar": "2026-10-25T16:36:00+00:00",
-      "state": "OPEN"
+      "id": "ETHUSD:BREAKOUT:L:2026-10-25T17:00:00+00:00",
+      "key": "ETHUSD",
+      "side": 1,
+      "setup_name": "Breakout",
+      "grade": "B",
+      "score": 6.4,
+      "plan": {
+        "entry": 2353.52001953125,
+        "zone_low": 2352.623189871652,
+        "zone_high": 2353.818962751116,
+        "stop": 2339.179011753627,
+        "tps": [
+          2375.0315311976847,
+          2382.202035086496,
+          2396.543042864119
+        ],
+        "risk": 14.341007777622963,
+        "atr15": 7.473580496651786,
+        "retest_confirm_buffer": 0.3736790248325893
+      },
+      "confirmation_end": "2026-10-25T17:00:00+00:00",
+      "created_at": "2026-10-25T17:01:35.180621+00:00",
+      "expires_at": "2026-10-25T18:00:00+00:00",
+      "touched": true,
+      "touch_time": "2026-10-25T17:01:35.180621+00:00"
+    },
+    "SOLUSD": {
+      "id": "SOLUSD:BREAKOUT:L:2026-10-25T17:00:00+00:00",
+      "key": "SOLUSD",
+      "side": 1,
+      "setup_name": "Breakout",
+      "grade": "B",
+      "score": 6.4,
+      "plan": {
+        "entry": 101.83999633789062,
+        "zone_low": 101.79585340227399,
+        "zone_high": 101.85471064976284,
+        "stop": 101.19482133047921,
+        "tps": [
+          102.80775884900774,
+          103.13034635271345,
+          103.77552136012486
+        ],
+        "risk": 0.6451750074114102,
+        "atr15": 0.36785779680524555,
+        "retest_confirm_buffer": 0.01839288984026228
+      },
+      "confirmation_end": "2026-10-25T17:00:00+00:00",
+      "created_at": "2026-10-25T17:01:37.004103+00:00",
+      "expires_at": "2026-10-25T18:00:00+00:00",
+      "touched": true,
+      "touch_time": "2026-10-25T17:01:37.004103+00:00"
     }
   },
+  "active_trade": {},
   "closed": [
     {
       "id": "BTCUSD:BREAKOUT:S:2026-10-25T05:45:00+00:00",
@@ -130,6 +134,31 @@
       "exit_reason": "STOP",
       "exit_price": 80446.09375,
       "closed_at": "2026-10-25T11:47:00+00:00"
+    },
+    {
+      "id": "ETHUSD:SWEEP:S:2026-10-25T15:45:00+00:00",
+      "side": -1,
+      "setup": "Liquidity High Sweep RETEST",
+      "entry_type": "RETEST",
+      "entry": 2342.85009765625,
+      "stop": 2348.07302507673,
+      "initial_stop": 2348.07302507673,
+      "tps": [
+        2336.9901938302173,
+        2334.7736275809148,
+        2330.3404950823096
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-10-25T16:33:19.434599+00:00",
+      "last_tracking_bar": "2026-10-25T16:54:00+00:00",
+      "state": "CLOSED",
+      "exit_reason": "STOP",
+      "exit_price": 2348.07302507673,
+      "closed_at": "2026-10-25T16:56:00+00:00"
     }
   ]
 }
