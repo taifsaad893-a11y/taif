@@ -260,14 +260,10 @@ def market_allowed(
     cfg,
     now,
 ):
-    if not cfg[
-        "weekdays_only"
-    ]:
+    if not cfg["weekdays_only"]:
         return True
 
-    return (
-        now.weekday() < 5
-    )
+    return now.weekday() < 5
 
 
 # =========================================================
@@ -289,8 +285,7 @@ def normalize_yf(df):
     ):
         df.columns = [
             column[0]
-            for column
-            in df.columns
+            for column in df.columns
         ]
 
     df = df.rename(
@@ -329,15 +324,10 @@ def normalize_yf(df):
             df.index,
             utc=True,
         )
-
     else:
         df.index = (
-            pd.to_datetime(
-                df.index
-            )
-            .tz_convert(
-                "UTC"
-            )
+            pd.to_datetime(df.index)
+            .tz_convert("UTC")
         )
 
     df["v"] = (
@@ -375,7 +365,6 @@ def closed_only(
 
 def get_frames(ticker):
 
-    # 15M
     d15 = yf.download(
         ticker,
         period="5d",
@@ -394,7 +383,6 @@ def get_frames(ticker):
         15,
     )
 
-    # 1H
     d1 = yf.download(
         ticker,
         period="60d",
@@ -413,7 +401,6 @@ def get_frames(ticker):
         60,
     )
 
-    # 4H
     d4 = (
         d1.resample(
             "4h",
@@ -462,18 +449,13 @@ def get_live_price(
     cfg,
 ):
 
-    # Crypto uses Binance.
-    if cfg.get(
-        "binance"
-    ):
+    if cfg.get("binance"):
 
         try:
             response = requests.get(
                 "https://api.binance.com/api/v3/ticker/price",
                 params={
-                    "symbol": cfg[
-                        "binance"
-                    ],
+                    "symbol": cfg["binance"],
                 },
                 timeout=10,
             )
@@ -481,9 +463,7 @@ def get_live_price(
             response.raise_for_status()
 
             return float(
-                response.json()[
-                    "price"
-                ]
+                response.json()["price"]
             )
 
         except Exception as error:
@@ -493,7 +473,6 @@ def get_live_price(
                 error,
             )
 
-    # Yahoo fallback.
     df = yf.download(
         cfg["ticker"],
         period="1d",
@@ -604,11 +583,13 @@ def trend(df):
 
 
 def trend_name(value):
-    return {
+    names = {
         1: "BULLISH",
         -1: "BEARISH",
         0: "RANGE",
-    }[value]
+    }
+
+    return names[value]
 
 
 # =========================================================
@@ -634,9 +615,7 @@ def volume_info(d15):
         }
 
     ratio = (
-        float(
-            volume.iloc[-1]
-        )
+        float(volume.iloc[-1])
         / average
     )
 
@@ -772,29 +751,21 @@ def htf_context(
             1e-9,
         )
 
-    levels_1h = (
-        recent_levels(
-            d1,
-            24,
-        )
+    levels_1h = recent_levels(
+        d1,
+        24,
     )
 
-    levels_4h = (
-        recent_levels(
-            d4,
-            20,
-        )
+    levels_4h = recent_levels(
+        d4,
+        20,
     )
 
     if side == 1:
 
         levels = [
-            levels_1h[
-                "support"
-            ],
-            levels_4h[
-                "support"
-            ],
+            levels_1h["support"],
+            levels_4h["support"],
         ]
 
         distances = [
@@ -827,12 +798,8 @@ def htf_context(
     else:
 
         levels = [
-            levels_1h[
-                "resistance"
-            ],
-            levels_4h[
-                "resistance"
-            ],
+            levels_1h["resistance"],
+            levels_4h["resistance"],
         ]
 
         distances = [
@@ -962,9 +929,7 @@ def build_trade_plan(
 
             stop = (
                 min(
-                    float(
-                        last["l"]
-                    ),
+                    float(last["l"]),
                     reference_level,
                 )
                 - SL_BUFFER_ATR
@@ -989,9 +954,7 @@ def build_trade_plan(
 
             stop = (
                 max(
-                    float(
-                        last["h"]
-                    ),
+                    float(last["h"]),
                     reference_level,
                 )
                 + SL_BUFFER_ATR
@@ -1003,9 +966,7 @@ def build_trade_plan(
         )
 
     if (
-        not math.isfinite(
-            risk
-        )
+        not math.isfinite(risk)
         or risk <= 0
     ):
         return None
@@ -1044,13 +1005,16 @@ def build_trade_plan(
         "zone_low": zone_low,
         "zone_high": zone_high,
         "stop": float(stop),
+
         "tps": [
             float(target_1),
             float(target_2),
             float(target_3),
         ],
+
         "risk": float(risk),
         "atr15": float(atr15),
+
         "retest_confirm_buffer": float(
             RETEST_CONFIRM_ATR
             * atr15
@@ -1068,6 +1032,7 @@ def detect_signal(
 ):
 
     d15 = frames["15m"]
+
     last = d15.iloc[-1]
 
     previous = (
@@ -1079,9 +1044,7 @@ def detect_signal(
     )
 
     if (
-        not math.isfinite(
-            atr15
-        )
+        not math.isfinite(atr15)
         or atr15 <= 0
     ):
         return None
@@ -1220,19 +1183,13 @@ def detect_signal(
 
     if volume["ratio"] is not None:
 
-        if volume[
-            "ratio"
-        ] >= 1.50:
+        if volume["ratio"] >= 1.50:
             score += 0.8
 
-        elif volume[
-            "ratio"
-        ] >= 1.10:
+        elif volume["ratio"] >= 1.10:
             score += 0.4
 
-        elif volume[
-            "ratio"
-        ] < 0.65:
+        elif volume["ratio"] < 0.65:
             score -= 0.4
 
     if cisd:
@@ -1251,9 +1208,7 @@ def detect_signal(
 
     if (
         score >= A_SCORE
-        and not htf[
-            "strong_against"
-        ]
+        and not htf["strong_against"]
     ):
         grade = "A"
 
@@ -1324,9 +1279,7 @@ def initial_entry_status(
         0.0,
         (
             now
-            - signal[
-                "confirmation_end"
-            ]
+            - signal["confirmation_end"]
         ).total_seconds(),
     )
 
@@ -1336,9 +1289,7 @@ def initial_entry_status(
         <= plan["zone_high"]
     )
 
-    if signal[
-        "grade"
-    ] == "B":
+    if signal["grade"] == "B":
 
         return {
             "status": (
@@ -1366,7 +1317,6 @@ def initial_entry_status(
         status = (
             "WAIT FOR RETEST CONFIRMATION"
         )
-
     else:
         status = (
             "WAIT FOR RETEST — DO NOT CHASE"
@@ -1402,17 +1352,14 @@ def signal_to_watch(
         "id": signal["id"],
         "key": signal["key"],
         "side": signal["side"],
-        "setup_name": (
-            signal["setup_name"]
-        ),
+        "setup_name": signal["setup_name"],
         "grade": signal["grade"],
         "score": signal["score"],
         "plan": plan,
 
         "confirmation_end": (
-            signal[
-                "confirmation_end"
-            ].isoformat()
+            signal["confirmation_end"]
+            .isoformat()
         ),
 
         "created_at": (
@@ -1420,9 +1367,7 @@ def signal_to_watch(
         ),
 
         "expires_at": (
-            signal[
-                "confirmation_end"
-            ]
+            signal["confirmation_end"]
             + pd.Timedelta(
                 minutes=(
                     WATCH_EXPIRY_MINUTES
@@ -1488,25 +1433,38 @@ def open_trade(
     st["active_trade"][key] = {
         "id": signal["id"],
         "side": signal["side"],
-        "setup": (
-            signal["setup_name"]
-        ),
+        "setup": signal["setup_name"],
         "entry_type": "DIRECT",
+
         "entry": float(
             live_price
         ),
-        "stop": plan["stop"],
-        "initial_stop": plan["stop"],
-        "tps": plan["tps"],
+
+        "stop": float(
+            plan["stop"]
+        ),
+
+        "initial_stop": float(
+            plan["stop"]
+        ),
+
+        "tps": [
+            float(x)
+            for x in plan["tps"]
+        ],
+
         "hits": [
             False,
             False,
             False,
         ],
+
         "opened_at": (
             now.isoformat()
         ),
+
         "last_tracking_bar": None,
+
         "state": "OPEN",
     }
 
@@ -1524,26 +1482,43 @@ def open_trade_from_watch(
     st["active_trade"][key] = {
         "id": watch["id"],
         "side": watch["side"],
+
         "setup": (
             watch["setup_name"]
             + " RETEST"
         ),
+
         "entry_type": "RETEST",
+
         "entry": float(
             live_price
         ),
-        "stop": plan["stop"],
-        "initial_stop": plan["stop"],
-        "tps": plan["tps"],
+
+        "stop": float(
+            plan["stop"]
+        ),
+
+        "initial_stop": float(
+            plan["stop"]
+        ),
+
+        "tps": [
+            float(x)
+            for x in plan["tps"]
+        ],
+
         "hits": [
             False,
             False,
             False,
         ],
+
         "opened_at": (
             now.isoformat()
         ),
+
         "last_tracking_bar": None,
+
         "state": "OPEN",
     }
 
@@ -1577,9 +1552,7 @@ def process_watch(
         watch["expires_at"]
     ):
 
-        st[
-            "watch_setup"
-        ].pop(
+        st["watch_setup"].pop(
             key,
             None,
         )
@@ -1602,27 +1575,20 @@ def process_watch(
 
     if stop_breached:
 
-        st[
-            "watch_setup"
-        ].pop(
+        st["watch_setup"].pop(
             key,
             None,
         )
 
         message = (
             f"❌ {key} | SETUP INVALIDATED\n"
-            f"SETUP: "
-            f"{watch['setup_name']}\n"
-            f"GRADE: "
-            f"{watch['grade']} | "
-            f"SCORE: "
-            f"{watch['score']}/10\n"
-            f"LIVE: "
-            f"{fmt(live_price)}\n"
+            f"SETUP: {watch['setup_name']}\n"
+            f"GRADE: {watch['grade']} | "
+            f"SCORE: {watch['score']}/10\n"
+            f"LIVE: {fmt(live_price)}\n"
             f"Reason: price breached "
             f"invalidation / SL area\n"
-            f"SETUP ID: "
-            f"{watch['id']}"
+            f"SETUP ID: {watch['id']}"
         )
 
         return message, False
@@ -1642,35 +1608,29 @@ def process_watch(
     ):
 
         watch["touched"] = True
+
         watch["touch_time"] = (
             now.isoformat()
         )
 
-        st[
-            "watch_setup"
-        ][key] = watch
+        st["watch_setup"][key] = (
+            watch
+        )
 
         message = (
-            f"🟡 {key} | "
-            f"RETEST IN ENTRY ZONE\n"
+            f"🟡 {key} | RETEST IN ENTRY ZONE\n"
             f"━━━━━━━━━━━━━━━━━━\n"
-            f"SETUP: "
-            f"{watch['setup_name']}\n"
-            f"GRADE: "
-            f"{watch['grade']} | "
-            f"SCORE: "
-            f"{watch['score']}/10\n"
+            f"SETUP: {watch['setup_name']}\n"
+            f"GRADE: {watch['grade']} | "
+            f"SCORE: {watch['score']}/10\n"
             f"ENTRY ZONE: "
             f"{fmt(plan['zone_low'])}"
             f" — "
             f"{fmt(plan['zone_high'])}\n"
-            f"LIVE: "
-            f"{fmt(live_price)}\n"
+            f"LIVE: {fmt(live_price)}\n"
             f"STATUS: "
-            f"WAIT FOR RETEST "
-            f"CONFIRMATION\n"
-            f"SETUP ID: "
-            f"{watch['id']}"
+            f"WAIT FOR RETEST CONFIRMATION\n"
+            f"SETUP ID: {watch['id']}"
         )
 
         return message, False
@@ -1736,13 +1696,12 @@ def process_watch(
         watch["touched"] = False
         watch["touch_time"] = None
 
-        st[
-            "watch_setup"
-        ][key] = watch
+        st["watch_setup"][key] = (
+            watch
+        )
 
         message = (
-            f"⚠️ {key} | "
-            f"RETEST MOVED TOO FAR\n"
+            f"⚠️ {key} | RETEST MOVED TOO FAR\n"
             f"━━━━━━━━━━━━━━━━━━\n"
             f"Confirmation happened but "
             f"price already moved too far.\n"
@@ -1752,17 +1711,13 @@ def process_watch(
             f"{fmt(plan['zone_low'])}"
             f" — "
             f"{fmt(plan['zone_high'])}\n"
-            f"LIVE: "
-            f"{fmt(live_price)}\n"
-            f"SETUP ID: "
-            f"{watch['id']}"
+            f"LIVE: {fmt(live_price)}\n"
+            f"SETUP ID: {watch['id']}"
         )
 
         return message, False
 
-    st[
-        "watch_setup"
-    ].pop(
+    st["watch_setup"].pop(
         key,
         None,
     )
@@ -1791,31 +1746,20 @@ def process_watch(
     )
 
     message = (
-        f"✅ {key} | "
-        f"ENTER ON RETEST\n"
+        f"✅ {key} | ENTER ON RETEST\n"
         f"━━━━━━━━━━━━━━━━━━\n"
-        f"SETUP: "
-        f"{watch['setup_name']}\n"
-        f"GRADE: "
-        f"{watch['grade']} | "
-        f"SCORE: "
-        f"{watch['score']}/10\n"
+        f"SETUP: {watch['setup_name']}\n"
+        f"GRADE: {watch['grade']} | "
+        f"SCORE: {watch['score']}/10\n"
         f"\n"
-        f"ENTRY: "
-        f"{fmt(live_price)}\n"
-        f"SL: "
-        f"{fmt(plan['stop'])}\n"
-        f"TP1: "
-        f"{fmt(plan['tps'][0])}\n"
-        f"TP2: "
-        f"{fmt(plan['tps'][1])}\n"
-        f"TP3: "
-        f"{fmt(plan['tps'][2])}\n"
-        f"R:R TO TP1: "
-        f"{rr_tp1:.2f}R\n"
+        f"ENTRY: {fmt(live_price)}\n"
+        f"SL: {fmt(plan['stop'])}\n"
+        f"TP1: {fmt(plan['tps'][0])}\n"
+        f"TP2: {fmt(plan['tps'][1])}\n"
+        f"TP3: {fmt(plan['tps'][2])}\n"
+        f"R:R TO TP1: {rr_tp1:.2f}R\n"
         f"\n"
-        f"SETUP ID: "
-        f"{watch['id']}"
+        f"SETUP ID: {watch['id']}"
     )
 
     return message, True
@@ -1845,31 +1789,27 @@ def close_trade(
         trade
     )
 
-    closed_trade[
-        "state"
-    ] = "CLOSED"
-
-    closed_trade[
-        "exit_reason"
-    ] = reason
-
-    closed_trade[
-        "exit_price"
-    ] = float(
-        exit_price
+    closed_trade["state"] = (
+        "CLOSED"
     )
 
-    closed_trade[
-        "closed_at"
-    ] = now.isoformat()
+    closed_trade["exit_reason"] = (
+        reason
+    )
+
+    closed_trade["exit_price"] = (
+        float(exit_price)
+    )
+
+    closed_trade["closed_at"] = (
+        stamp(now).isoformat()
+    )
 
     st["closed"].append(
         closed_trade
     )
 
-    st[
-        "active_trade"
-    ].pop(
+    st["active_trade"].pop(
         key,
         None,
     )
@@ -1889,10 +1829,11 @@ def get_tracking_bars(
         trade["opened_at"]
     )
 
-    # Crypto: Binance 1m.
-    if cfg.get(
-        "binance"
-    ):
+    # =====================================================
+    # CRYPTO - BINANCE 1M
+    # =====================================================
+
+    if cfg.get("binance"):
 
         try:
 
@@ -1904,9 +1845,7 @@ def get_tracking_bars(
             response = requests.get(
                 "https://api.binance.com/api/v3/klines",
                 params={
-                    "symbol": cfg[
-                        "binance"
-                    ],
+                    "symbol": cfg["binance"],
                     "interval": "1m",
                     "startTime": start_ms,
                     "limit": 1000,
@@ -1942,18 +1881,10 @@ def get_tracking_bars(
                     {
                         "time": candle_start,
                         "end": candle_end,
-                        "o": float(
-                            candle[1]
-                        ),
-                        "h": float(
-                            candle[2]
-                        ),
-                        "l": float(
-                            candle[3]
-                        ),
-                        "c": float(
-                            candle[4]
-                        ),
+                        "o": float(candle[1]),
+                        "h": float(candle[2]),
+                        "l": float(candle[3]),
+                        "c": float(candle[4]),
                     }
                 )
 
@@ -1963,12 +1894,14 @@ def get_tracking_bars(
                     rows
                 )
 
-                return (
+                df = (
                     df.set_index(
                         "time"
                     )
                     .sort_index()
                 )
+
+                return df
 
         except Exception as error:
 
@@ -1978,7 +1911,10 @@ def get_tracking_bars(
                 error,
             )
 
-    # Gold / Nasdaq / fallback.
+    # =====================================================
+    # YAHOO 1M FALLBACK
+    # =====================================================
+
     try:
 
         df = yf.download(
@@ -1993,6 +1929,9 @@ def get_tracking_bars(
         df = normalize_yf(
             df
         )
+
+        if df.empty:
+            return pd.DataFrame()
 
         result = df[
             [
@@ -2010,10 +1949,12 @@ def get_tracking_bars(
             )
         )
 
-        return result[
+        result = result[
             result["end"]
             >= opened_at
         ]
+
+        return result
 
     except Exception as error:
 
@@ -2037,9 +1978,7 @@ def trade_header(
 
     direction = (
         "LONG"
-        if int(
-            trade["side"]
-        ) == 1
+        if int(trade["side"]) == 1
         else "SHORT"
     )
 
@@ -2100,18 +2039,22 @@ def process_trade_bar(
 
     messages = []
 
+    # =====================================================
+    # STOP CHECK
+    # =====================================================
+
     if side == 1:
+
         stop_hit = (
             low <= stop
         )
+
     else:
+
         stop_hit = (
             high >= stop
         )
 
-    # Conservative:
-    # if stop and new target appear in same
-    # 1m OHLC candle, count stop first.
     if stop_hit:
 
         close_trade(
@@ -2124,8 +2067,7 @@ def process_trade_bar(
 
         messages.append(
             (
-                f"🛑 {key} | "
-                f"STOP LOSS HIT\n"
+                f"🛑 {key} | STOP LOSS HIT\n"
                 f"━━━━━━━━━━━━━━━━━━\n"
                 f"{trade_header(key, trade)}\n"
                 f"\n"
@@ -2137,7 +2079,6 @@ def process_trade_bar(
                 f"{fmt(high)}\n"
                 f"1M LOW: "
                 f"{fmt(low)}\n"
-                f"\n"
                 f"STATUS: CLOSED"
             )
         )
@@ -2147,6 +2088,10 @@ def process_trade_bar(
             True,
         )
 
+    # =====================================================
+    # TARGET CHECK
+    # =====================================================
+
     for i, target in enumerate(
         targets
     ):
@@ -2155,10 +2100,13 @@ def process_trade_bar(
             continue
 
         if side == 1:
+
             target_hit = (
                 high >= target
             )
+
         else:
+
             target_hit = (
                 low <= target
             )
@@ -2168,6 +2116,7 @@ def process_trade_bar(
 
         hits[i] = True
 
+        # TP1
         if i == 0:
 
             old_stop = float(
@@ -2193,6 +2142,7 @@ def process_trade_bar(
                 )
             )
 
+        # TP2
         elif i == 1:
 
             old_stop = float(
@@ -2218,6 +2168,7 @@ def process_trade_bar(
                 )
             )
 
+        # TP3
         elif i == 2:
 
             close_trade(
@@ -2230,8 +2181,7 @@ def process_trade_bar(
 
             messages.append(
                 (
-                    f"🏆 {key} | "
-                    f"TP3 HIT — CLOSED\n"
+                    f"🏆 {key} | TP3 HIT — CLOSED\n"
                     f"━━━━━━━━━━━━━━━━━━\n"
                     f"{trade_header(key, trade)}\n"
                     f"\n"
@@ -2239,7 +2189,7 @@ def process_trade_bar(
                     f"{fmt(target)}\n"
                     f"ENTRY: "
                     f"{fmt(trade['entry'])}\n"
-                    f"✅ PAPER TRADE CLOSED"
+                    f"STATUS: CLOSED"
                 )
             )
 
@@ -2295,7 +2245,16 @@ def monitor_open_trade(
         None,
     )
 
+    trade.setdefault(
+        "entry_type",
+        "UNKNOWN",
+    )
+
     messages = []
+
+    # =====================================================
+    # HISTORICAL 1M TRACKING
+    # =====================================================
 
     bars = get_tracking_bars(
         key,
@@ -2311,9 +2270,7 @@ def monitor_open_trade(
 
         last_seen = (
             stamp(
-                trade[
-                    "last_tracking_bar"
-                ]
+                trade["last_tracking_bar"]
             )
             if trade.get(
                 "last_tracking_bar"
@@ -2321,11 +2278,11 @@ def monitor_open_trade(
             else None
         )
 
-        for ts, bar in (
-            bars.iterrows()
-        ):
+        for ts, bar in bars.iterrows():
 
-            ts = stamp(ts)
+            ts = stamp(
+                ts
+            )
 
             bar_end = stamp(
                 bar.get(
@@ -2379,6 +2336,10 @@ def monitor_open_trade(
     ]:
         return messages
 
+    # =====================================================
+    # LIVE PRICE BACKUP
+    # =====================================================
+
     trade = st[
         "active_trade"
     ][key]
@@ -2392,10 +2353,13 @@ def monitor_open_trade(
     )
 
     if side == 1:
+
         live_stop_hit = (
             live_price <= stop
         )
+
     else:
+
         live_stop_hit = (
             live_price >= stop
         )
@@ -2412,8 +2376,7 @@ def monitor_open_trade(
 
         messages.append(
             (
-                f"🛑 {key} | "
-                f"STOP LOSS HIT\n"
+                f"🛑 {key} | STOP LOSS HIT\n"
                 f"━━━━━━━━━━━━━━━━━━\n"
                 f"{trade_header(key, trade)}\n"
                 f"\n"
@@ -2428,6 +2391,10 @@ def monitor_open_trade(
         )
 
         return messages
+
+    # =====================================================
+    # LIVE TARGET BACKUP
+    # =====================================================
 
     targets = list(
         map(
@@ -2446,11 +2413,14 @@ def monitor_open_trade(
             continue
 
         if side == 1:
+
             target_hit = (
                 live_price
                 >= target
             )
+
         else:
+
             target_hit = (
                 live_price
                 <= target
@@ -2476,8 +2446,11 @@ def monitor_open_trade(
                     f"🎯 {key} | TP1 HIT\n"
                     f"━━━━━━━━━━━━━━━━━━\n"
                     f"{trade_header(key, trade)}\n"
+                    f"\n"
                     f"TP1: "
                     f"{fmt(target)}\n"
+                    f"LIVE: "
+                    f"{fmt(live_price)}\n"
                     f"🔒 SL MOVED: "
                     f"{fmt(old_stop)} → "
                     f"{fmt(trade['stop'])}\n"
@@ -2500,8 +2473,11 @@ def monitor_open_trade(
                     f"🎯 {key} | TP2 HIT\n"
                     f"━━━━━━━━━━━━━━━━━━\n"
                     f"{trade_header(key, trade)}\n"
+                    f"\n"
                     f"TP2: "
                     f"{fmt(target)}\n"
+                    f"LIVE: "
+                    f"{fmt(live_price)}\n"
                     f"🔒 SL MOVED: "
                     f"{fmt(old_stop)} → "
                     f"{fmt(trade['stop'])}\n"
@@ -2521,13 +2497,15 @@ def monitor_open_trade(
 
             messages.append(
                 (
-                    f"🏆 {key} | "
-                    f"TP3 HIT — CLOSED\n"
+                    f"🏆 {key} | TP3 HIT — CLOSED\n"
                     f"━━━━━━━━━━━━━━━━━━\n"
                     f"{trade_header(key, trade)}\n"
+                    f"\n"
                     f"TP3: "
                     f"{fmt(target)}\n"
-                    f"✅ PAPER TRADE CLOSED"
+                    f"LIVE: "
+                    f"{fmt(live_price)}\n"
+                    f"STATUS: CLOSED"
                 )
             )
 
@@ -2538,6 +2516,7 @@ def monitor_open_trade(
     if key in st[
         "active_trade"
     ]:
+
         st[
             "active_trade"
         ][key] = trade
@@ -2566,11 +2545,8 @@ def format_signal(
     volume = signal["volume"]
 
     confirmation_time = (
-        signal[
-            "confirmation_end"
-        ].tz_convert(
-            BAGHDAD
-        )
+        signal["confirmation_end"]
+        .tz_convert(BAGHDAD)
     )
 
     age_seconds = int(
@@ -2583,9 +2559,7 @@ def format_signal(
         volume["label"]
     )
 
-    if volume[
-        "ratio"
-    ] is not None:
+    if volume["ratio"] is not None:
 
         volume_text += (
             f" "
@@ -2605,8 +2579,7 @@ def format_signal(
     )
 
     return (
-        f"🚨 {signal['key']} "
-        f"{side}\n"
+        f"🚨 {signal['key']} {side}\n"
         f"━━━━━━━━━━━━━━━━━━\n"
         f"STATUS: "
         f"{entry_status['status']}\n"
@@ -2636,8 +2609,7 @@ def format_signal(
         f"(3.0R)\n"
         f"\n"
         f"15M CONFIRMATION CLOSE: "
-        f"{confirmation_time:"
-        f"%Y-%m-%d %H:%M} "
+        f"{confirmation_time:%Y-%m-%d %H:%M} "
         f"Baghdad\n"
         f"ALERT AGE: "
         f"{age_seconds}s\n"
@@ -2645,7 +2617,8 @@ def format_signal(
         f"{volume_text}\n"
         f"1H: "
         f"{trend_name(htf['t1'])}"
-        f" | 4H: "
+        f" | "
+        f"4H: "
         f"{trend_name(htf['t4'])}\n"
         f"NEAR HTF ZONE: "
         f"{near_htf}\n"
@@ -2676,6 +2649,10 @@ def scan_market(
     ):
         return
 
+    # =====================================================
+    # DATA
+    # =====================================================
+
     try:
 
         frames = get_frames(
@@ -2701,7 +2678,7 @@ def scan_market(
 
     # =====================================================
     # ACTIVE TRADE
-    # BOTH DIRECT + RETEST
+    # DIRECT BREAKOUT + RETEST BOTH TRACKED HERE
     # =====================================================
 
     trade_messages = (
@@ -2714,11 +2691,12 @@ def scan_market(
         )
     )
 
-    for message in (
+    for trade_message in (
         trade_messages
     ):
+
         send_telegram(
-            message
+            trade_message
         )
 
     if key in st[
@@ -2727,7 +2705,7 @@ def scan_market(
         return
 
     # =====================================================
-    # WAITING RETEST
+    # OLD SETUP / RETEST
     # =====================================================
 
     watch_message, entered = (
@@ -2740,6 +2718,7 @@ def scan_market(
     )
 
     if watch_message:
+
         send_telegram(
             watch_message
         )
@@ -2753,7 +2732,7 @@ def scan_market(
         return
 
     # =====================================================
-    # NEW SIGNAL
+    # NEW 15M SETUP
     # =====================================================
 
     signal = detect_signal(
@@ -2765,9 +2744,7 @@ def scan_market(
         return
 
     if (
-        st[
-            "last_signal"
-        ].get(key)
+        st["last_signal"].get(key)
         == signal["id"]
     ):
         return
@@ -2784,6 +2761,10 @@ def scan_market(
         )
     )
 
+    # =====================================================
+    # INITIAL ALERT
+    # =====================================================
+
     send_telegram(
         format_signal(
             signal,
@@ -2796,13 +2777,9 @@ def scan_market(
     # DIRECT ENTRY
     # =====================================================
 
-    if status[
-        "tradable"
-    ]:
+    if status["tradable"]:
 
-        st[
-            "watch_setup"
-        ].pop(
+        st["watch_setup"].pop(
             key,
             None,
         )
@@ -2817,14 +2794,12 @@ def scan_market(
         return
 
     # =====================================================
-    # WATCH RETEST
+    # WAIT FOR RETEST
     # =====================================================
 
     if status["watch"]:
 
-        st[
-            "watch_setup"
-        ][key] = (
+        st["watch_setup"][key] = (
             signal_to_watch(
                 signal,
                 live_price,
