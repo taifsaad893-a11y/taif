@@ -1,7 +1,12 @@
 {
-  "last_signal": {},
+  "last_signal": {
+    "XAUUSD": "XAUUSD:SWEEP:L:2026-10-26T00:00:00+00:00"
+  },
   "watch_setup": {},
   "active_trade": {},
   "closed": [],
-  "last_analysis_slot": {}
+  "last_analysis_slot": {
+    "XAUUSD": "2026-10-26T00:00:00+00:00",
+    "NASDAQ": "2026-10-26T00:00:00+00:00"
+  }
 }
