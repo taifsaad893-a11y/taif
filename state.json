@@ -1,12 +1,40 @@
 {
   "last_signal": {
-    "XAUUSD": "XAUUSD:SWEEP:L:2026-10-26T00:45:00+00:00"
+    "XAUUSD": "XAUUSD:BREAKOUT:L:2026-10-26T03:15:00+00:00"
   },
-  "watch_setup": {},
+  "watch_setup": {
+    "XAUUSD": {
+      "id": "XAUUSD:BREAKOUT:L:2026-10-26T03:15:00+00:00",
+      "key": "XAUUSD",
+      "side": 1,
+      "setup_name": "Breakout",
+      "grade": "B",
+      "score": 6.8,
+      "plan": {
+        "entry": 4013.79179,
+        "zone_low": 4012.4615303428573,
+        "zone_high": 4014.2352098857145,
+        "stop": 3997.228205428571,
+        "tps": [
+          4038.6371668571437,
+          4046.9189591428585,
+          4063.4825437142877
+        ],
+        "risk": 16.563584571429146,
+        "atr15": 11.085497142857093,
+        "retest_confirm_buffer": 0.5542748571428547
+      },
+      "confirmation_end": "2026-10-26T03:15:00+00:00",
+      "created_at": "2026-10-26T03:19:59.254331+00:00",
+      "expires_at": "2026-10-26T04:15:00+00:00",
+      "touched": true,
+      "touch_time": "2026-10-26T03:23:59.255012+00:00"
+    }
+  },
   "active_trade": {},
   "closed": [],
   "last_analysis_slot": {
-    "XAUUSD": "2026-10-26T02:45:00+00:00",
-    "NASDAQ": "2026-10-26T02:45:00+00:00"
+    "XAUUSD": "2026-10-26T03:15:00+00:00",
+    "NASDAQ": "2026-10-26T03:15:00+00:00"
   }
 }
