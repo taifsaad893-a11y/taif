@@ -2,7 +2,7 @@ name: Session Market Scanner
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/15 * * * *"
 
   push:
     branches:
@@ -22,7 +22,7 @@ concurrency:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -45,7 +45,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
-          LOOP_SCANS: "50"
+          LOOP_SCANS: "15"
           SCAN_INTERVAL_SECONDS: "60"
           STATE_FILE: "state.json"
         run: |
