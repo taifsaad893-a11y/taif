@@ -2,8 +2,8 @@ name: Session Market Scanner
 
 on:
   schedule:
-    # GitHub starts the workflow every 5 minutes.
-    # agent.py scans every minute inside each run.
+    # Heartbeat trigger. A running job scans every minute for ~50 minutes,
+    # so temporary GitHub schedule delays do not stop market monitoring.
     - cron: "*/5 * * * *"
 
   workflow_dispatch:
@@ -18,38 +18,25 @@ concurrency:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 55
 
     steps:
-
-      # ===================================================
-      # CHECKOUT
-      # ===================================================
-
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      # ===================================================
-      # PYTHON
-      # ===================================================
+        with:
+          # A scheduled run may sit pending behind the active long-running job.
+          # Always load the newest state/code when it actually starts.
+          ref: main
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # ===================================================
-      # DEPENDENCIES
-      # ===================================================
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      # ===================================================
-      # RUN SCANNER
-      # ===================================================
 
       - name: Run Session Market Scanner
         env:
@@ -57,20 +44,14 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
 
-          # Run one scan every 60 seconds.
-          # GitHub starts this workflow every 5 minutes,
-          # so each workflow performs 5 scans.
-          LOOP_SCANS: "5"
+          # Stay alive and scan every minute. New 5-minute schedule events act
+          # as a heartbeat so a pending replacement is ready when this run ends.
+          LOOP_SCANS: "50"
           SCAN_INTERVAL_SECONDS: "60"
-
           STATE_FILE: "state.json"
 
         run: |
-          python agent.py
-
-      # ===================================================
-      # SAVE STATE
-      # ===================================================
+          python resilient_runner.py
 
       - name: Save scanner state
         if: always()
