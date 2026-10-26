@@ -1,40 +1,41 @@
 {
   "last_signal": {
-    "XAUUSD": "XAUUSD:BREAKOUT:S:2026-10-26T13:45:00+00:00"
+    "XAUUSD": "XAUUSD:BREAKOUT:S:2026-10-26T13:45:00+00:00",
+    "NASDAQ": "NASDAQ:SWEEP:S:2026-10-26T15:15:00+00:00"
   },
   "watch_setup": {
-    "XAUUSD": {
-      "id": "XAUUSD:BREAKOUT:S:2026-10-26T13:45:00+00:00",
-      "key": "XAUUSD",
+    "NASDAQ": {
+      "id": "NASDAQ:SWEEP:S:2026-10-26T15:15:00+00:00",
+      "key": "NASDAQ",
       "side": -1,
-      "setup_name": "Breakout",
-      "grade": "B",
-      "score": 6.8,
+      "setup_name": "Liquidity High Sweep",
+      "grade": "A",
+      "score": 8.1,
       "plan": {
-        "entry": 4001.2472,
-        "zone_low": 4001.017249085714,
-        "zone_high": 4001.937052742857,
-        "stop": 4011.829055928571,
+        "entry": 29530.75,
+        "zone_low": 29526.935,
+        "zone_high": 29542.195,
+        "stop": 29586.30625,
         "tps": [
-          3985.3744161071427,
-          3980.0834881428573,
-          3969.501632214286
+          29447.415624999998,
+          29419.637499999997,
+          29364.081249999996
         ],
-        "risk": 10.581855928571258,
-        "atr15": 5.748772857142837,
-        "retest_confirm_buffer": 0.2874386428571419
+        "risk": 55.556250000001455,
+        "atr15": 95.375,
+        "retest_confirm_buffer": 4.76875
       },
-      "confirmation_end": "2026-10-26T13:45:00+00:00",
-      "created_at": "2026-10-26T13:55:23.279192+00:00",
-      "expires_at": "2026-10-26T14:45:00+00:00",
-      "touched": false,
-      "touch_time": null
+      "confirmation_end": "2026-10-26T15:15:00+00:00",
+      "created_at": "2026-10-26T15:29:09.149985+00:00",
+      "expires_at": "2026-10-26T16:15:00+00:00",
+      "touched": true,
+      "touch_time": "2026-10-26T15:30:09.038025+00:00"
     }
   },
   "active_trade": {},
   "closed": [],
   "last_analysis_slot": {
-    "XAUUSD": "2026-10-26T13:45:00+00:00",
-    "NASDAQ": "2026-10-26T13:45:00+00:00"
+    "XAUUSD": "2026-10-26T15:30:00+00:00",
+    "NASDAQ": "2026-10-26T15:15:00+00:00"
   }
 }
