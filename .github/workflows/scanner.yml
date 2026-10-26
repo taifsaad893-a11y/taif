@@ -2,9 +2,13 @@ name: Session Market Scanner
 
 on:
   schedule:
-    # Heartbeat trigger. A running job scans every minute for ~50 minutes,
-    # so temporary GitHub schedule delays do not stop market monitoring.
     - cron: "*/5 * * * *"
+
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "state.json"
 
   workflow_dispatch:
 
@@ -24,8 +28,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # A scheduled run may sit pending behind the active long-running job.
-          # Always load the newest state/code when it actually starts.
           ref: main
 
       - name: Setup Python
@@ -43,13 +45,9 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
-
-          # Stay alive and scan every minute. New 5-minute schedule events act
-          # as a heartbeat so a pending replacement is ready when this run ends.
           LOOP_SCANS: "50"
           SCAN_INTERVAL_SECONDS: "60"
           STATE_FILE: "state.json"
-
         run: |
           python resilient_runner.py
 
