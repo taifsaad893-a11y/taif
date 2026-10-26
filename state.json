@@ -3,39 +3,11 @@
     "XAUUSD": "XAUUSD:BREAKOUT:S:2026-10-26T13:45:00+00:00",
     "NASDAQ": "NASDAQ:SWEEP:S:2026-10-26T15:15:00+00:00"
   },
-  "watch_setup": {
-    "NASDAQ": {
-      "id": "NASDAQ:SWEEP:S:2026-10-26T15:15:00+00:00",
-      "key": "NASDAQ",
-      "side": -1,
-      "setup_name": "Liquidity High Sweep",
-      "grade": "A",
-      "score": 8.1,
-      "plan": {
-        "entry": 29530.75,
-        "zone_low": 29526.935,
-        "zone_high": 29542.195,
-        "stop": 29586.30625,
-        "tps": [
-          29447.415624999998,
-          29419.637499999997,
-          29364.081249999996
-        ],
-        "risk": 55.556250000001455,
-        "atr15": 95.375,
-        "retest_confirm_buffer": 4.76875
-      },
-      "confirmation_end": "2026-10-26T15:15:00+00:00",
-      "created_at": "2026-10-26T15:29:09.149985+00:00",
-      "expires_at": "2026-10-26T16:15:00+00:00",
-      "touched": true,
-      "touch_time": "2026-10-26T15:30:09.038025+00:00"
-    }
-  },
+  "watch_setup": {},
   "active_trade": {},
   "closed": [],
   "last_analysis_slot": {
-    "XAUUSD": "2026-10-26T15:30:00+00:00",
-    "NASDAQ": "2026-10-26T15:15:00+00:00"
+    "XAUUSD": "2026-10-26T16:15:00+00:00",
+    "NASDAQ": "2026-10-26T16:15:00+00:00"
   }
 }
