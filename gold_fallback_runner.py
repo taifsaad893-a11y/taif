@@ -6,6 +6,7 @@ agent = strategy_upgrade.agent
 
 _ORIG_GET_FRAMES = agent.get_frames
 _ORIG_GET_LIVE_PRICE = agent.get_live_price
+_ORIG_PROCESS_WATCH = agent.process_watch
 
 GOLD_YAHOO_SYMBOL = "XAUUSD=X"
 
@@ -52,8 +53,28 @@ def resilient_gold_live(key, cfg):
         return yahoo_gold_live()
 
 
+def deduplicated_process_watch(st, key, live_price, now):
+    watch_before = st.get("watch_setup", {}).get(key)
+    already_alerted = bool(watch_before and watch_before.get("moved_too_far_alerted"))
+
+    message, entered = _ORIG_PROCESS_WATCH(st, key, live_price, now)
+
+    if message and "RETEST MOVED TOO FAR" in message:
+        watch_after = st.get("watch_setup", {}).get(key)
+        if watch_after is not None:
+            watch_after["moved_too_far_alerted"] = True
+            st["watch_setup"][key] = watch_after
+
+        if already_alerted:
+            print(f"{key}: duplicate RETEST MOVED TOO FAR alert suppressed", flush=True)
+            return None, entered
+
+    return message, entered
+
+
 agent.get_frames = resilient_gold_frames
 agent.get_live_price = resilient_gold_live
+agent.process_watch = deduplicated_process_watch
 
 
 if __name__ == "__main__":
