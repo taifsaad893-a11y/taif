@@ -27,7 +27,7 @@
         false
       ],
       "opened_at": "2026-10-27T11:10:38.108817+00:00",
-      "last_tracking_bar": "2026-10-27T14:24:00+00:00",
+      "last_tracking_bar": "2026-10-27T14:50:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-10-27T11:10:38.108817+00:00",
       "state": "OPEN"
@@ -75,7 +75,7 @@
         false
       ],
       "opened_at": "2026-10-27T13:05:52.426986+00:00",
-      "last_tracking_bar": "2026-10-27T14:33:00+00:00",
+      "last_tracking_bar": "2026-10-27T14:59:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-10-27T13:05:52.426986+00:00",
       "state": "OPEN"
@@ -464,8 +464,8 @@
   "last_analysis_slot": {
     "XAUUSD": "2026-10-27T11:00:00+00:00",
     "NASDAQ": "2026-10-27T10:45:00+00:00",
-    "BTCUSD": "2026-10-27T14:30:00+00:00",
+    "BTCUSD": "2026-10-27T15:00:00+00:00",
     "ETHUSD": "2026-10-27T12:30:00+00:00",
-    "SOLUSD": "2026-10-27T14:30:00+00:00"
+    "SOLUSD": "2026-10-27T15:00:00+00:00"
   }
 }
