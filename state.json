@@ -6,36 +6,7 @@
     "ETHUSD": "ETHUSD:SWEEP:S:2026-10-27T17:30:00+00:00",
     "BTCUSD": "BTCUSD:SWEEP:S:2026-10-27T13:00:00+00:00"
   },
-  "watch_setup": {
-    "ETHUSD": {
-      "id": "ETHUSD:SWEEP:S:2026-10-27T17:30:00+00:00",
-      "key": "ETHUSD",
-      "side": -1,
-      "setup_name": "Liquidity High Sweep",
-      "grade": "B",
-      "score": 6.8,
-      "plan": {
-        "entry": 2353.54,
-        "zone_low": 2353.1606285714283,
-        "zone_high": 2354.6781142857144,
-        "stop": 2359.636857142857,
-        "tps": [
-          2334.49,
-          2329.04,
-          2319.49
-        ],
-        "risk": 6.096857142857061,
-        "atr15": 9.484285714285663,
-        "retest_confirm_buffer": 0.4742142857142832,
-        "structure_based": true
-      },
-      "confirmation_end": "2026-10-27T17:30:00+00:00",
-      "created_at": "2026-10-27T17:30:22.295673+00:00",
-      "expires_at": "2026-10-27T18:30:00+00:00",
-      "touched": false,
-      "touch_time": null
-    }
-  },
+  "watch_setup": {},
   "active_trade": {
     "NASDAQ": {
       "id": "NASDAQ:BREAKOUT:L:2026-10-27T10:45:00+00:00",
@@ -56,7 +27,7 @@
         false
       ],
       "opened_at": "2026-10-27T11:10:38.108817+00:00",
-      "last_tracking_bar": "2026-10-27T18:16:00+00:00",
+      "last_tracking_bar": "2026-10-27T19:06:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-10-27T11:10:38.108817+00:00",
       "state": "OPEN"
@@ -104,7 +75,7 @@
         false
       ],
       "opened_at": "2026-10-27T16:20:15.620215+00:00",
-      "last_tracking_bar": "2026-10-27T18:25:00+00:00",
+      "last_tracking_bar": "2026-10-27T19:15:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-10-27T16:20:15.620215+00:00",
       "state": "OPEN"
@@ -520,8 +491,8 @@
   "last_analysis_slot": {
     "XAUUSD": "2026-10-27T11:00:00+00:00",
     "NASDAQ": "2026-10-27T10:45:00+00:00",
-    "BTCUSD": "2026-10-27T18:15:00+00:00",
-    "ETHUSD": "2026-10-27T17:30:00+00:00",
+    "BTCUSD": "2026-10-27T19:15:00+00:00",
+    "ETHUSD": "2026-10-27T19:15:00+00:00",
     "SOLUSD": "2026-10-27T15:30:00+00:00"
   }
 }
