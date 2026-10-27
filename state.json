@@ -4,38 +4,35 @@
     "NASDAQ": "NASDAQ:BREAKOUT:L:2026-10-27T00:15:00+00:00",
     "SOLUSD": "SOLUSD:BREAKOUT:L:2026-10-27T00:15:00+00:00",
     "ETHUSD": "ETHUSD:SWEEP:S:2026-10-27T01:45:00+00:00",
-    "BTCUSD": "BTCUSD:SWEEP:S:2026-10-27T00:45:00+00:00"
+    "BTCUSD": "BTCUSD:BREAKOUT:S:2026-10-27T03:15:00+00:00"
   },
-  "watch_setup": {
-    "ETHUSD": {
-      "id": "ETHUSD:SWEEP:S:2026-10-27T01:45:00+00:00",
-      "key": "ETHUSD",
+  "watch_setup": {},
+  "active_trade": {
+    "BTCUSD": {
+      "id": "BTCUSD:BREAKOUT:S:2026-10-27T03:15:00+00:00",
       "side": -1,
-      "setup_name": "Liquidity High Sweep",
-      "grade": "B",
-      "score": 7.3,
-      "plan": {
-        "entry": 2329.51,
-        "zone_low": 2329.2329714285715,
-        "zone_high": 2330.341085714286,
-        "stop": 2335.038857142857,
-        "tps": [
-          2321.216714285715,
-          2318.4522857142865,
-          2312.9234285714297
-        ],
-        "risk": 5.52885714285685,
-        "atr15": 6.925714285714288,
-        "retest_confirm_buffer": 0.3462857142857144
-      },
-      "confirmation_end": "2026-10-27T01:45:00+00:00",
-      "created_at": "2026-10-27T01:56:24.236697+00:00",
-      "expires_at": "2026-10-27T02:45:00+00:00",
-      "touched": false,
-      "touch_time": null
+      "setup": "Breakout",
+      "entry_type": "DIRECT",
+      "entry": 79700.0,
+      "stop": 79870.07642857142,
+      "initial_stop": 79870.07642857142,
+      "tps": [
+        79445.13535714288,
+        79360.14714285717,
+        79190.17071428575
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-10-27T03:15:01.405995+00:00",
+      "last_tracking_bar": "2026-10-27T03:23:00+00:00",
+      "tracking_version": 2,
+      "tracking_initialized_at": "2026-10-27T03:15:01.405995+00:00",
+      "state": "OPEN"
     }
   },
-  "active_trade": {},
   "closed": [
     {
       "id": "XAUUSD:BREAKOUT:S:2026-10-27T00:00:00+00:00",
@@ -147,10 +144,10 @@
     }
   ],
   "last_analysis_slot": {
-    "XAUUSD": "2026-10-27T02:30:00+00:00",
-    "NASDAQ": "2026-10-27T02:30:00+00:00",
-    "BTCUSD": "2026-10-27T02:30:00+00:00",
-    "ETHUSD": "2026-10-27T01:45:00+00:00",
-    "SOLUSD": "2026-10-27T02:30:00+00:00"
+    "XAUUSD": "2026-10-27T03:15:00+00:00",
+    "NASDAQ": "2026-10-27T03:15:00+00:00",
+    "BTCUSD": "2026-10-27T03:15:00+00:00",
+    "ETHUSD": "2026-10-27T03:15:00+00:00",
+    "SOLUSD": "2026-10-27T03:15:00+00:00"
   }
 }
