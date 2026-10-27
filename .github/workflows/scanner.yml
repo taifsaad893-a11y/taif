@@ -49,7 +49,7 @@ jobs:
           SCAN_INTERVAL_SECONDS: "60"
           STATE_FILE: "state.json"
         run: |
-          python strategy_upgrade.py
+          python gold_fallback_runner.py
 
       - name: Save scanner state
         if: always()
