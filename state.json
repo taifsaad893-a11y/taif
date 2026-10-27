@@ -56,7 +56,7 @@
         false
       ],
       "opened_at": "2026-10-27T11:10:38.108817+00:00",
-      "last_tracking_bar": "2026-10-27T20:59:00+00:00",
+      "last_tracking_bar": "2026-10-27T22:10:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-10-27T11:10:38.108817+00:00",
       "state": "OPEN"
@@ -83,30 +83,6 @@
       "last_tracking_bar": "2026-10-27T11:47:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-10-27T11:43:01.935987+00:00",
-      "state": "OPEN"
-    },
-    "SOLUSD": {
-      "id": "SOLUSD:SWEEP:S:2026-10-27T15:30:00+00:00",
-      "side": -1,
-      "setup": "Liquidity High Sweep RETEST",
-      "entry_type": "RETEST",
-      "entry": 100.99,
-      "stop": 101.38957142857143,
-      "initial_stop": 101.38957142857143,
-      "tps": [
-        100.51,
-        100.25,
-        99.99
-      ],
-      "hits": [
-        false,
-        false,
-        false
-      ],
-      "opened_at": "2026-10-27T16:20:15.620215+00:00",
-      "last_tracking_bar": "2026-10-27T21:30:00+00:00",
-      "tracking_version": 2,
-      "tracking_initialized_at": "2026-10-27T16:20:15.620215+00:00",
       "state": "OPEN"
     }
   },
@@ -515,13 +491,40 @@
       "exit_reason": "TP1_LOCKED",
       "exit_price": 2348.1940714285715,
       "closed_at": "2026-10-27T15:23:00+00:00"
+    },
+    {
+      "id": "SOLUSD:SWEEP:S:2026-10-27T15:30:00+00:00",
+      "side": -1,
+      "setup": "Liquidity High Sweep RETEST",
+      "entry_type": "RETEST",
+      "entry": 100.99,
+      "stop": 101.38957142857143,
+      "initial_stop": 101.38957142857143,
+      "tps": [
+        100.51,
+        100.25,
+        99.99
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-10-27T16:20:15.620215+00:00",
+      "last_tracking_bar": "2026-10-27T21:31:00+00:00",
+      "tracking_version": 2,
+      "tracking_initialized_at": "2026-10-27T16:20:15.620215+00:00",
+      "state": "CLOSED",
+      "exit_reason": "STOP",
+      "exit_price": 101.38957142857143,
+      "closed_at": "2026-10-27T21:33:00+00:00"
     }
   ],
   "last_analysis_slot": {
     "XAUUSD": "2026-10-27T11:00:00+00:00",
     "NASDAQ": "2026-10-27T10:45:00+00:00",
-    "BTCUSD": "2026-10-27T21:30:00+00:00",
+    "BTCUSD": "2026-10-27T22:15:00+00:00",
     "ETHUSD": "2026-10-27T21:30:00+00:00",
-    "SOLUSD": "2026-10-27T15:30:00+00:00"
+    "SOLUSD": "2026-10-27T22:15:00+00:00"
   }
 }
