@@ -7,33 +7,6 @@
     "BTCUSD": "BTCUSD:BREAKOUT:L:2026-10-27T12:45:00+00:00"
   },
   "watch_setup": {
-    "ETHUSD": {
-      "id": "ETHUSD:BREAKOUT:L:2026-10-27T12:30:00+00:00",
-      "key": "ETHUSD",
-      "side": 1,
-      "setup_name": "Breakout",
-      "grade": "B",
-      "score": 6.4,
-      "plan": {
-        "entry": 2327.82,
-        "zone_low": 2326.8898285714286,
-        "zone_high": 2328.1300571428574,
-        "stop": 2314.237285714286,
-        "tps": [
-          2348.1940714285715,
-          2354.9854285714287,
-          2368.568142857143
-        ],
-        "risk": 13.582714285714246,
-        "atr15": 7.75142857142857,
-        "retest_confirm_buffer": 0.3875714285714285
-      },
-      "confirmation_end": "2026-10-27T12:30:00+00:00",
-      "created_at": "2026-10-27T12:30:04.323489+00:00",
-      "expires_at": "2026-10-27T13:30:00+00:00",
-      "touched": false,
-      "touch_time": null
-    },
     "BTCUSD": {
       "id": "BTCUSD:BREAKOUT:L:2026-10-27T12:45:00+00:00",
       "key": "BTCUSD",
@@ -58,8 +31,8 @@
       "confirmation_end": "2026-10-27T12:45:00+00:00",
       "created_at": "2026-10-27T12:56:31.357709+00:00",
       "expires_at": "2026-10-27T13:45:00+00:00",
-      "touched": false,
-      "touch_time": null
+      "touched": true,
+      "touch_time": "2026-10-27T13:02:00+00:00"
     },
     "SOLUSD": {
       "id": "SOLUSD:BREAKOUT:L:2026-10-27T12:45:00+00:00",
@@ -85,8 +58,8 @@
       "confirmation_end": "2026-10-27T12:45:00+00:00",
       "created_at": "2026-10-27T12:56:35.162666+00:00",
       "expires_at": "2026-10-27T13:45:00+00:00",
-      "touched": false,
-      "touch_time": null
+      "touched": true,
+      "touch_time": "2026-10-27T13:01:54.619617+00:00"
     }
   },
   "active_trade": {
@@ -109,7 +82,7 @@
         false
       ],
       "opened_at": "2026-10-27T11:10:38.108817+00:00",
-      "last_tracking_bar": "2026-10-27T12:46:00+00:00",
+      "last_tracking_bar": "2026-10-27T13:01:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-10-27T11:10:38.108817+00:00",
       "state": "OPEN"
@@ -136,6 +109,30 @@
       "last_tracking_bar": "2026-10-27T11:47:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-10-27T11:43:01.935987+00:00",
+      "state": "OPEN"
+    },
+    "ETHUSD": {
+      "id": "ETHUSD:BREAKOUT:L:2026-10-27T12:30:00+00:00",
+      "side": 1,
+      "setup": "Breakout RETEST",
+      "entry_type": "RETEST",
+      "entry": 2330.6,
+      "stop": 2314.237285714286,
+      "initial_stop": 2314.237285714286,
+      "tps": [
+        2348.1940714285715,
+        2354.9854285714287,
+        2368.568142857143
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-10-27T13:05:52.426986+00:00",
+      "last_tracking_bar": "2026-10-27T13:10:00+00:00",
+      "tracking_version": 2,
+      "tracking_initialized_at": "2026-10-27T13:05:52.426986+00:00",
       "state": "OPEN"
     }
   },
