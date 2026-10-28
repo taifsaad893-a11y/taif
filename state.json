@@ -6,124 +6,7 @@
     "ETHUSD": "ETHUSD:SWEEP:S:2026-10-28T20:15:00+00:00",
     "BTCUSD": "BTCUSD:SWEEP:S:2026-10-28T20:15:00+00:00"
   },
-  "watch_setup": {
-    "XAUUSD": {
-      "id": "XAUUSD:SWEEP:S:2026-10-28T20:15:00+00:00",
-      "key": "XAUUSD",
-      "side": -1,
-      "setup_name": "Liquidity High Sweep",
-      "grade": "B",
-      "score": 6.8,
-      "plan": {
-        "entry": 4070.31157,
-        "zone_low": 4069.7399287999997,
-        "zone_high": 4072.0264936,
-        "stop": 4086.253179,
-        "tps": [
-          4045.79844,
-          4036.48987,
-          4008.6587
-        ],
-        "risk": 15.941608999999971,
-        "atr15": 14.291030000000026,
-        "retest_confirm_buffer": 0.7145515000000013,
-        "structure_based": true,
-        "stop_structure": 4081.96587
-      },
-      "confirmation_end": "2026-10-28T20:15:00+00:00",
-      "created_at": "2026-10-28T20:57:02.953188+00:00",
-      "expires_at": "2026-10-28T21:15:00+00:00",
-      "touched": false,
-      "touch_time": null
-    },
-    "NASDAQ": {
-      "id": "NASDAQ:BREAKOUT:S:2026-10-28T20:45:00+00:00",
-      "key": "NASDAQ",
-      "side": -1,
-      "setup_name": "Breakout",
-      "grade": "B",
-      "score": 6.4,
-      "plan": {
-        "entry": 29729.5,
-        "zone_low": 29724.964285714286,
-        "zone_high": 29743.10714285714,
-        "stop": 29840.01785714286,
-        "tps": [
-          29494.5,
-          29412.25,
-          29391.75
-        ],
-        "risk": 110.5178571428587,
-        "atr15": 113.39285714285714,
-        "retest_confirm_buffer": 5.669642857142858,
-        "structure_based": true,
-        "stop_structure": 29806.0
-      },
-      "confirmation_end": "2026-10-28T20:45:00+00:00",
-      "created_at": "2026-10-28T20:57:04.044807+00:00",
-      "expires_at": "2026-10-28T21:45:00+00:00",
-      "touched": true,
-      "touch_time": "2026-10-28T21:03:03.189486+00:00"
-    },
-    "BTCUSD": {
-      "id": "BTCUSD:SWEEP:S:2026-10-28T20:15:00+00:00",
-      "key": "BTCUSD",
-      "side": -1,
-      "setup_name": "Liquidity High Sweep",
-      "grade": "B",
-      "score": 7.3,
-      "plan": {
-        "entry": 81275.2,
-        "zone_low": 81263.15857142858,
-        "zone_high": 81311.32428571428,
-        "stop": 81690.31071428572,
-        "tps": [
-          80649.5,
-          80420.0,
-          79824.4
-        ],
-        "risk": 415.11071428572177,
-        "atr15": 301.0357142857153,
-        "retest_confirm_buffer": 15.051785714285765,
-        "structure_based": true,
-        "stop_structure": 81600.0
-      },
-      "confirmation_end": "2026-10-28T20:15:00+00:00",
-      "created_at": "2026-10-28T21:01:03.776051+00:00",
-      "expires_at": "2026-10-28T21:15:00+00:00",
-      "touched": true,
-      "touch_time": "2026-10-28T21:02:03.768189+00:00"
-    },
-    "ETHUSD": {
-      "id": "ETHUSD:SWEEP:S:2026-10-28T20:15:00+00:00",
-      "key": "ETHUSD",
-      "side": -1,
-      "setup_name": "Liquidity High Sweep",
-      "grade": "B",
-      "score": 6.8,
-      "plan": {
-        "entry": 2367.03,
-        "zone_low": 2366.5638000000004,
-        "zone_high": 2368.4286,
-        "stop": 2378.8865,
-        "tps": [
-          2346.89,
-          2341.0,
-          2330.82
-        ],
-        "risk": 11.856499999999869,
-        "atr15": 11.655000000000005,
-        "retest_confirm_buffer": 0.5827500000000002,
-        "structure_based": true,
-        "stop_structure": 2375.39
-      },
-      "confirmation_end": "2026-10-28T20:15:00+00:00",
-      "created_at": "2026-10-28T21:01:06.269439+00:00",
-      "expires_at": "2026-10-28T21:15:00+00:00",
-      "touched": false,
-      "touch_time": null
-    }
-  },
+  "watch_setup": {},
   "active_trade": {
     "SOLUSD": {
       "id": "SOLUSD:SWEEP:S:2026-10-28T20:15:00+00:00",
@@ -144,7 +27,7 @@
         false
       ],
       "opened_at": "2026-10-28T21:05:05.619614+00:00",
-      "last_tracking_bar": "2026-10-28T21:10:00+00:00",
+      "last_tracking_bar": "2026-10-28T21:51:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-10-28T21:05:05.619614+00:00",
       "state": "OPEN"
@@ -828,10 +711,10 @@
     }
   ],
   "last_analysis_slot": {
-    "XAUUSD": "2026-10-28T20:45:00+00:00",
+    "XAUUSD": "2026-10-28T21:45:00+00:00",
     "NASDAQ": "2026-10-28T20:45:00+00:00",
-    "BTCUSD": "2026-10-28T21:00:00+00:00",
-    "ETHUSD": "2026-10-28T21:00:00+00:00",
+    "BTCUSD": "2026-10-28T21:45:00+00:00",
+    "ETHUSD": "2026-10-28T21:45:00+00:00",
     "SOLUSD": "2026-10-28T21:00:00+00:00"
   }
 }
