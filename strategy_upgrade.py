@@ -40,31 +40,38 @@ def _reference_level(signal, d15):
     return float(previous["h"].max()) if signal["setup_type"] == "SWEEP" else float(previous["l"].min())
 
 
-def _structure_stop(signal, frames, reference, atr15):
+def _structure_stop_candidates(signal, frames, reference, atr15):
+    """Return valid structure stops ordered from nearest risk to widest risk."""
     side = int(signal["side"])
     d15 = frames["15m"]
     last = d15.iloc[-1]
+    entry = float(last["c"])
 
-    # Use the signal invalidation plus the most recent confirmed 15m swing.
-    # This avoids placing SL inside ordinary retest noise.
+    raw_structures = [float(reference)]
     if side == 1:
-        candidates = [float(last["l"]), float(reference)]
-        swing_lows = _pivot_levels(d15, -1, 40)
-        candidates += [x for x in swing_lows[:3] if x < float(last["c"])]
-        structure = min(candidates)
-        stop = structure - STRUCTURE_SL_BUFFER_ATR * atr15
-        risk = float(last["c"]) - stop
+        raw_structures.append(float(last["l"]))
+        raw_structures += [x for x in _pivot_levels(d15, -1, 40)[:5] if x < entry]
     else:
-        candidates = [float(last["h"]), float(reference)]
-        swing_highs = _pivot_levels(d15, 1, 40)
-        candidates += [x for x in swing_highs[:3] if x > float(last["c"])]
-        structure = max(candidates)
-        stop = structure + STRUCTURE_SL_BUFFER_ATR * atr15
-        risk = stop - float(last["c"])
+        raw_structures.append(float(last["h"]))
+        raw_structures += [x for x in _pivot_levels(d15, 1, 40)[:5] if x > entry]
 
-    if not math.isfinite(risk) or risk <= 0 or risk > MAX_INITIAL_RISK_ATR * atr15:
-        return None
-    return float(stop), float(risk)
+    candidates = []
+    seen = set()
+    for structure in raw_structures:
+        if not math.isfinite(structure):
+            continue
+        stop = structure - side * STRUCTURE_SL_BUFFER_ATR * atr15
+        risk = (entry - stop) * side
+        if not math.isfinite(risk) or risk <= 0:
+            continue
+        key = round(float(stop), 10)
+        if key in seen:
+            continue
+        seen.add(key)
+        candidates.append((float(stop), float(risk), float(structure)))
+
+    candidates.sort(key=lambda x: x[1])
+    return candidates
 
 
 def _target_candidates(frames, side, entry):
@@ -110,6 +117,20 @@ def _choose_targets(frames, side, entry, risk):
     return targets
 
 
+def _choose_structure_plan(signal, frames, reference, atr15):
+    """Try nearest valid structure first; widen only when needed for a valid plan."""
+    side = int(signal["side"])
+    entry = float(frames["15m"].iloc[-1]["c"])
+
+    for stop, risk, structure in _structure_stop_candidates(signal, frames, reference, atr15):
+        if risk > MAX_INITIAL_RISK_ATR * atr15:
+            continue
+        targets = _choose_targets(frames, side, entry, risk)
+        if targets:
+            return stop, risk, targets, structure
+    return None
+
+
 def upgraded_detect_signal(key, frames):
     signal = _ORIG_DETECT_SIGNAL(key, frames)
     if not signal:
@@ -120,16 +141,11 @@ def upgraded_detect_signal(key, frames):
     entry = float(d15.iloc[-1]["c"])
     reference = _reference_level(signal, d15)
 
-    stop_info = _structure_stop(signal, frames, reference, atr15)
-    if not stop_info:
-        print(key, "setup rejected: structure stop too wide/invalid")
+    plan_info = _choose_structure_plan(signal, frames, reference, atr15)
+    if not plan_info:
+        print(key, "setup rejected: no valid nearby structure stop with >= 1.5R TP1 room")
         return None
-    stop, risk = stop_info
-
-    targets = _choose_targets(frames, int(signal["side"]), entry, risk)
-    if not targets:
-        print(key, "setup rejected: no structural TP1 with >= 1.5R room")
-        return None
+    stop, risk, targets, structure = plan_info
 
     zone_low, zone_high = agent.calculate_entry_zone(int(signal["side"]), entry, atr15)
     signal["plan"] = {
@@ -142,6 +158,7 @@ def upgraded_detect_signal(key, frames):
         "atr15": atr15,
         "retest_confirm_buffer": float(agent.RETEST_CONFIRM_ATR * atr15),
         "structure_based": True,
+        "stop_structure": structure,
     }
     return signal
 
