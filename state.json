@@ -1,12 +1,42 @@
 {
   "last_signal": {
-    "XAUUSD": "XAUUSD:SWEEP:L:2026-10-29T01:15:00+00:00",
+    "XAUUSD": "XAUUSD:BREAKOUT:S:2026-10-29T06:00:00+00:00",
     "NASDAQ": "NASDAQ:BREAKOUT:S:2026-10-29T04:15:00+00:00",
     "SOLUSD": "SOLUSD:SWEEP:L:2026-10-29T02:45:00+00:00",
     "ETHUSD": "ETHUSD:BREAKOUT:S:2026-10-29T02:45:00+00:00",
     "BTCUSD": "BTCUSD:SWEEP:L:2026-10-29T03:00:00+00:00"
   },
-  "watch_setup": {},
+  "watch_setup": {
+    "XAUUSD": {
+      "id": "XAUUSD:BREAKOUT:S:2026-10-29T06:00:00+00:00",
+      "key": "XAUUSD",
+      "side": -1,
+      "setup_name": "Breakout",
+      "grade": "B",
+      "score": 6.8,
+      "plan": {
+        "entry": 4025.14802,
+        "zone_low": 4024.8749235714286,
+        "zone_high": 4025.9673092857142,
+        "stop": 4037.886463214286,
+        "tps": [
+          4003.75719,
+          3993.55681,
+          3977.58455
+        ],
+        "risk": 12.73844321428578,
+        "atr15": 6.827410714285667,
+        "retest_confirm_buffer": 0.34137053571428333,
+        "structure_based": true,
+        "stop_structure": 4035.83824
+      },
+      "confirmation_end": "2026-10-29T06:00:00+00:00",
+      "created_at": "2026-10-29T06:13:36.523537+00:00",
+      "expires_at": "2026-10-29T07:00:00+00:00",
+      "touched": true,
+      "touch_time": "2026-10-29T06:14:36.523877+00:00"
+    }
+  },
   "active_trade": {
     "SOLUSD": {
       "id": "SOLUSD:SWEEP:L:2026-10-29T02:45:00+00:00",
@@ -27,7 +57,7 @@
         false
       ],
       "opened_at": "2026-10-29T03:31:50.382270+00:00",
-      "last_tracking_bar": "2026-10-29T05:30:00+00:00",
+      "last_tracking_bar": "2026-10-29T06:26:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-10-29T03:31:50.382270+00:00",
       "state": "OPEN"
@@ -792,10 +822,10 @@
     }
   ],
   "last_analysis_slot": {
-    "XAUUSD": "2026-10-29T05:30:00+00:00",
-    "NASDAQ": "2026-10-29T05:30:00+00:00",
-    "BTCUSD": "2026-10-29T05:30:00+00:00",
-    "ETHUSD": "2026-10-29T05:30:00+00:00",
+    "XAUUSD": "2026-10-29T06:00:00+00:00",
+    "NASDAQ": "2026-10-29T06:15:00+00:00",
+    "BTCUSD": "2026-10-29T06:15:00+00:00",
+    "ETHUSD": "2026-10-29T06:15:00+00:00",
     "SOLUSD": "2026-10-29T02:45:00+00:00"
   }
 }
