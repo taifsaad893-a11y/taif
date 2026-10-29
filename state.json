@@ -1,6 +1,6 @@
 {
   "last_signal": {
-    "XAUUSD": "XAUUSD:BREAKOUT:S:2026-10-29T06:00:00+00:00",
+    "XAUUSD": "XAUUSD:SWEEP:L:2026-10-29T08:15:00+00:00",
     "NASDAQ": "NASDAQ:BREAKOUT:S:2026-10-29T04:15:00+00:00",
     "SOLUSD": "SOLUSD:SWEEP:L:2026-10-29T02:45:00+00:00",
     "ETHUSD": "ETHUSD:BREAKOUT:S:2026-10-29T02:45:00+00:00",
@@ -27,9 +27,33 @@
         false
       ],
       "opened_at": "2026-10-29T03:31:50.382270+00:00",
-      "last_tracking_bar": "2026-10-29T07:37:00+00:00",
+      "last_tracking_bar": "2026-10-29T08:35:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-10-29T03:31:50.382270+00:00",
+      "state": "OPEN"
+    },
+    "XAUUSD": {
+      "id": "XAUUSD:SWEEP:L:2026-10-29T08:15:00+00:00",
+      "side": 1,
+      "setup": "Liquidity Low Sweep RETEST",
+      "entry_type": "RETEST",
+      "entry": 4033.72192,
+      "stop": 4021.1677095714285,
+      "initial_stop": 4021.1677095714285,
+      "tps": [
+        4046.45328,
+        4055.83098,
+        4065.53645
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-10-29T08:28:52.343749+00:00",
+      "last_tracking_bar": "2026-10-29T08:35:00+00:00",
+      "tracking_version": 2,
+      "tracking_initialized_at": "2026-10-29T08:28:52.343749+00:00",
       "state": "OPEN"
     }
   },
@@ -792,10 +816,10 @@
     }
   ],
   "last_analysis_slot": {
-    "XAUUSD": "2026-10-29T07:30:00+00:00",
-    "NASDAQ": "2026-10-29T07:30:00+00:00",
-    "BTCUSD": "2026-10-29T07:30:00+00:00",
-    "ETHUSD": "2026-10-29T07:30:00+00:00",
+    "XAUUSD": "2026-10-29T08:15:00+00:00",
+    "NASDAQ": "2026-10-29T08:30:00+00:00",
+    "BTCUSD": "2026-10-29T08:30:00+00:00",
+    "ETHUSD": "2026-10-29T08:30:00+00:00",
     "SOLUSD": "2026-10-29T02:45:00+00:00"
   }
 }
