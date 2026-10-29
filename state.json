@@ -6,37 +6,7 @@
     "ETHUSD": "ETHUSD:BREAKOUT:S:2026-10-29T20:15:00+00:00",
     "BTCUSD": "BTCUSD:SWEEP:L:2026-10-29T21:00:00+00:00"
   },
-  "watch_setup": {
-    "BTCUSD": {
-      "id": "BTCUSD:SWEEP:L:2026-10-29T21:00:00+00:00",
-      "key": "BTCUSD",
-      "side": 1,
-      "setup_name": "Liquidity Low Sweep",
-      "grade": "B",
-      "score": 6.8,
-      "plan": {
-        "entry": 78864.0,
-        "zone_low": 78816.40628571429,
-        "zone_high": 78879.86457142857,
-        "stop": 78161.01571428572,
-        "tps": [
-          80031.0,
-          80274.0,
-          81070.0
-        ],
-        "risk": 702.9842857142794,
-        "atr15": 396.6142857142851,
-        "retest_confirm_buffer": 19.830714285714254,
-        "structure_based": true,
-        "stop_structure": 78280.0
-      },
-      "confirmation_end": "2026-10-29T21:00:00+00:00",
-      "created_at": "2026-10-29T21:16:17.700243+00:00",
-      "expires_at": "2026-10-29T22:00:00+00:00",
-      "touched": false,
-      "touch_time": null
-    }
-  },
+  "watch_setup": {},
   "active_trade": {},
   "closed": [
     {
@@ -1094,10 +1064,10 @@
     }
   ],
   "last_analysis_slot": {
-    "XAUUSD": "2026-10-29T21:15:00+00:00",
+    "XAUUSD": "2026-10-29T22:00:00+00:00",
     "NASDAQ": "2026-10-29T20:30:00+00:00",
-    "BTCUSD": "2026-10-29T21:15:00+00:00",
-    "ETHUSD": "2026-10-29T21:15:00+00:00",
-    "SOLUSD": "2026-10-29T21:15:00+00:00"
+    "BTCUSD": "2026-10-29T22:00:00+00:00",
+    "ETHUSD": "2026-10-29T22:00:00+00:00",
+    "SOLUSD": "2026-10-29T22:00:00+00:00"
   }
 }
