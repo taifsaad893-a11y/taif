@@ -2,7 +2,7 @@
   "last_signal": {
     "XAUUSD": "XAUUSD:BREAKOUT:S:2026-10-30T03:15:00+00:00",
     "NASDAQ": "NASDAQ:SWEEP:L:2026-10-30T14:30:00+00:00",
-    "SOLUSD": "SOLUSD:SWEEP:S:2026-10-31T18:30:00+00:00",
+    "SOLUSD": "SOLUSD:BREAKOUT:S:2026-10-31T20:45:00+00:00",
     "ETHUSD": "ETHUSD:SWEEP:L:2026-10-30T01:45:00+00:00",
     "BTCUSD": "BTCUSD:BREAKOUT:L:2026-10-31T18:00:00+00:00"
   },
@@ -27,9 +27,33 @@
         false
       ],
       "opened_at": "2026-10-30T02:28:05.795504+00:00",
-      "last_tracking_bar": "2026-10-31T20:15:00+00:00",
+      "last_tracking_bar": "2026-10-31T21:02:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-10-30T02:28:05.795504+00:00",
+      "state": "OPEN"
+    },
+    "SOLUSD": {
+      "id": "SOLUSD:BREAKOUT:S:2026-10-31T20:45:00+00:00",
+      "side": -1,
+      "setup": "Breakout RETEST",
+      "entry_type": "RETEST",
+      "entry": 95.53,
+      "stop": 95.74121428571428,
+      "initial_stop": 95.74121428571428,
+      "tps": [
+        95.35,
+        95.15,
+        94.92
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-10-31T21:03:31.404538+00:00",
+      "last_tracking_bar": null,
+      "tracking_version": 2,
+      "tracking_initialized_at": "2026-10-31T21:03:31.404538+00:00",
       "state": "OPEN"
     }
   },
@@ -1226,8 +1250,8 @@
   "last_analysis_slot": {
     "XAUUSD": "2026-10-30T23:45:00+00:00",
     "NASDAQ": "2026-10-30T20:45:00+00:00",
-    "BTCUSD": "2026-10-31T20:15:00+00:00",
+    "BTCUSD": "2026-10-31T21:00:00+00:00",
     "ETHUSD": "2026-10-30T01:45:00+00:00",
-    "SOLUSD": "2026-10-31T20:15:00+00:00"
+    "SOLUSD": "2026-10-31T20:45:00+00:00"
   }
 }
