@@ -6,37 +6,7 @@
     "ETHUSD": "ETHUSD:SWEEP:L:2026-10-30T01:45:00+00:00",
     "BTCUSD": "BTCUSD:SWEEP:S:2026-11-01T17:30:00+00:00"
   },
-  "watch_setup": {
-    "BTCUSD": {
-      "id": "BTCUSD:SWEEP:S:2026-11-01T17:30:00+00:00",
-      "key": "BTCUSD",
-      "side": -1,
-      "setup_name": "Liquidity High Sweep",
-      "grade": "B",
-      "score": 6.6,
-      "plan": {
-        "entry": 78137.9,
-        "zone_low": 78134.28628571428,
-        "zone_high": 78148.74114285714,
-        "stop": 78278.20285714287,
-        "tps": [
-          77902.4,
-          77792.4,
-          77680.9
-        ],
-        "risk": 140.3028571428731,
-        "atr15": 90.34285714285735,
-        "retest_confirm_buffer": 4.517142857142868,
-        "structure_based": true,
-        "stop_structure": 78251.1
-      },
-      "confirmation_end": "2026-11-01T17:30:00+00:00",
-      "created_at": "2026-11-01T17:50:17.539596+00:00",
-      "expires_at": "2026-11-01T18:30:00+00:00",
-      "touched": false,
-      "touch_time": null
-    }
-  },
+  "watch_setup": {},
   "active_trade": {
     "ETHUSD": {
       "id": "ETHUSD:SWEEP:L:2026-10-30T01:45:00+00:00",
@@ -57,7 +27,7 @@
         false
       ],
       "opened_at": "2026-10-30T02:28:05.795504+00:00",
-      "last_tracking_bar": "2026-11-01T17:59:00+00:00",
+      "last_tracking_bar": "2026-11-01T18:50:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-10-30T02:28:05.795504+00:00",
       "state": "OPEN"
@@ -81,7 +51,7 @@
         false
       ],
       "opened_at": "2026-11-01T18:00:20.376151+00:00",
-      "last_tracking_bar": null,
+      "last_tracking_bar": "2026-11-01T18:50:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-01T18:00:20.376151+00:00",
       "state": "OPEN"
@@ -1361,7 +1331,7 @@
   "last_analysis_slot": {
     "XAUUSD": "2026-10-30T23:45:00+00:00",
     "NASDAQ": "2026-10-30T20:45:00+00:00",
-    "BTCUSD": "2026-11-01T17:45:00+00:00",
+    "BTCUSD": "2026-11-01T18:45:00+00:00",
     "ETHUSD": "2026-10-30T01:45:00+00:00",
     "SOLUSD": "2026-11-01T18:00:00+00:00"
   }
