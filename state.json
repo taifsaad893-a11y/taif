@@ -1,42 +1,12 @@
 {
   "last_signal": {
-    "XAUUSD": "XAUUSD:BREAKOUT:L:2026-11-02T16:45:00+00:00",
+    "XAUUSD": "XAUUSD:SWEEP:L:2026-11-02T20:00:00+00:00",
     "NASDAQ": "NASDAQ:BREAKOUT:S:2026-11-02T19:00:00+00:00",
-    "SOLUSD": "SOLUSD:SWEEP:S:2026-11-02T14:00:00+00:00",
+    "SOLUSD": "SOLUSD:SWEEP:L:2026-11-02T19:30:00+00:00",
     "ETHUSD": "ETHUSD:BREAKOUT:S:2026-11-02T16:00:00+00:00",
     "BTCUSD": "BTCUSD:BREAKOUT:S:2026-11-02T16:00:00+00:00"
   },
-  "watch_setup": {
-    "NASDAQ": {
-      "id": "NASDAQ:BREAKOUT:S:2026-11-02T19:00:00+00:00",
-      "key": "NASDAQ",
-      "side": -1,
-      "setup_name": "Breakout",
-      "grade": "A",
-      "score": 8.1,
-      "plan": {
-        "entry": 28441.5,
-        "zone_low": 28438.48642857143,
-        "zone_high": 28450.540714285715,
-        "stop": 28520.601785714287,
-        "tps": [
-          28232.75,
-          28283.296428571426,
-          28204.19464285714
-        ],
-        "risk": 79.10178571428696,
-        "atr15": 75.33928571428571,
-        "retest_confirm_buffer": 3.7669642857142858,
-        "structure_based": true,
-        "stop_structure": 28498.0
-      },
-      "confirmation_end": "2026-11-02T19:00:00+00:00",
-      "created_at": "2026-11-02T19:12:40.867843+00:00",
-      "expires_at": "2026-11-02T20:00:00+00:00",
-      "touched": false,
-      "touch_time": null
-    }
-  },
+  "watch_setup": {},
   "active_trade": {
     "BTCUSD": {
       "id": "BTCUSD:BREAKOUT:S:2026-11-02T16:00:00+00:00",
@@ -57,7 +27,7 @@
         false
       ],
       "opened_at": "2026-11-02T16:00:59.112738+00:00",
-      "last_tracking_bar": "2026-11-02T19:24:00+00:00",
+      "last_tracking_bar": "2026-11-02T20:15:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-02T16:00:59.112738+00:00",
       "state": "OPEN"
@@ -68,7 +38,7 @@
       "setup": "Breakout RETEST",
       "entry_type": "RETEST",
       "entry": 2272.25,
-      "stop": 2292.8564285714283,
+      "stop": 2272.25,
       "initial_stop": 2292.8564285714283,
       "tps": [
         2243.48,
@@ -76,14 +46,62 @@
         2208.4
       ],
       "hits": [
-        false,
+        true,
         false,
         false
       ],
       "opened_at": "2026-11-02T16:10:00.692731+00:00",
-      "last_tracking_bar": "2026-11-02T19:24:00+00:00",
+      "last_tracking_bar": "2026-11-02T20:15:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-02T16:10:00.692731+00:00",
+      "state": "OPEN"
+    },
+    "XAUUSD": {
+      "id": "XAUUSD:SWEEP:L:2026-11-02T20:00:00+00:00",
+      "side": 1,
+      "setup": "Liquidity Low Sweep RETEST",
+      "entry_type": "RETEST",
+      "entry": 3946.64141,
+      "stop": 3937.0092807857145,
+      "initial_stop": 3937.0092807857145,
+      "tps": [
+        3965.37347,
+        3967.64919,
+        3969.9869
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-11-02T20:04:46.471137+00:00",
+      "last_tracking_bar": "2026-11-02T20:15:00+00:00",
+      "tracking_version": 2,
+      "tracking_initialized_at": "2026-11-02T20:04:46.471137+00:00",
+      "state": "OPEN"
+    },
+    "SOLUSD": {
+      "id": "SOLUSD:SWEEP:L:2026-11-02T19:30:00+00:00",
+      "side": 1,
+      "setup": "Liquidity Low Sweep RETEST",
+      "entry_type": "RETEST",
+      "entry": 92.01,
+      "stop": 91.17328571428571,
+      "initial_stop": 91.17328571428571,
+      "tps": [
+        93.91,
+        94.3,
+        94.58
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-11-02T20:04:49.615948+00:00",
+      "last_tracking_bar": "2026-11-02T20:15:00+00:00",
+      "tracking_version": 2,
+      "tracking_initialized_at": "2026-11-02T20:04:49.615948+00:00",
       "state": "OPEN"
     }
   },
@@ -1683,10 +1701,10 @@
     }
   ],
   "last_analysis_slot": {
-    "XAUUSD": "2026-11-02T19:15:00+00:00",
-    "NASDAQ": "2026-11-02T19:00:00+00:00",
+    "XAUUSD": "2026-11-02T20:00:00+00:00",
+    "NASDAQ": "2026-11-02T20:15:00+00:00",
     "BTCUSD": "2026-11-02T16:00:00+00:00",
     "ETHUSD": "2026-11-02T16:00:00+00:00",
-    "SOLUSD": "2026-11-02T19:15:00+00:00"
+    "SOLUSD": "2026-11-02T20:00:00+00:00"
   }
 }
