@@ -27,7 +27,7 @@
         false
       ],
       "opened_at": "2026-11-02T16:00:59.112738+00:00",
-      "last_tracking_bar": "2026-11-02T21:52:00+00:00",
+      "last_tracking_bar": "2026-11-02T22:37:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-02T16:00:59.112738+00:00",
       "state": "OPEN"
@@ -51,7 +51,7 @@
         false
       ],
       "opened_at": "2026-11-02T16:10:00.692731+00:00",
-      "last_tracking_bar": "2026-11-02T21:52:00+00:00",
+      "last_tracking_bar": "2026-11-02T22:37:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-02T16:10:00.692731+00:00",
       "state": "OPEN"
@@ -75,7 +75,7 @@
         false
       ],
       "opened_at": "2026-11-02T20:04:46.471137+00:00",
-      "last_tracking_bar": "2026-11-02T21:52:00+00:00",
+      "last_tracking_bar": "2026-11-02T22:37:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-02T20:04:46.471137+00:00",
       "state": "OPEN"
@@ -1708,6 +1708,6 @@
     "NASDAQ": "2026-11-02T21:45:00+00:00",
     "BTCUSD": "2026-11-02T16:00:00+00:00",
     "ETHUSD": "2026-11-02T16:00:00+00:00",
-    "SOLUSD": "2026-11-02T21:45:00+00:00"
+    "SOLUSD": "2026-11-02T22:30:00+00:00"
   }
 }
