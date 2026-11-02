@@ -27,7 +27,7 @@
         false
       ],
       "opened_at": "2026-11-02T16:00:59.112738+00:00",
-      "last_tracking_bar": "2026-11-02T20:15:00+00:00",
+      "last_tracking_bar": "2026-11-02T21:09:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-02T16:00:59.112738+00:00",
       "state": "OPEN"
@@ -51,7 +51,7 @@
         false
       ],
       "opened_at": "2026-11-02T16:10:00.692731+00:00",
-      "last_tracking_bar": "2026-11-02T20:15:00+00:00",
+      "last_tracking_bar": "2026-11-02T21:09:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-02T16:10:00.692731+00:00",
       "state": "OPEN"
@@ -75,33 +75,9 @@
         false
       ],
       "opened_at": "2026-11-02T20:04:46.471137+00:00",
-      "last_tracking_bar": "2026-11-02T20:15:00+00:00",
+      "last_tracking_bar": "2026-11-02T21:08:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-02T20:04:46.471137+00:00",
-      "state": "OPEN"
-    },
-    "SOLUSD": {
-      "id": "SOLUSD:SWEEP:L:2026-11-02T19:30:00+00:00",
-      "side": 1,
-      "setup": "Liquidity Low Sweep RETEST",
-      "entry_type": "RETEST",
-      "entry": 92.01,
-      "stop": 91.17328571428571,
-      "initial_stop": 91.17328571428571,
-      "tps": [
-        93.91,
-        94.3,
-        94.58
-      ],
-      "hits": [
-        false,
-        false,
-        false
-      ],
-      "opened_at": "2026-11-02T20:04:49.615948+00:00",
-      "last_tracking_bar": "2026-11-02T20:15:00+00:00",
-      "tracking_version": 2,
-      "tracking_initialized_at": "2026-11-02T20:04:49.615948+00:00",
       "state": "OPEN"
     }
   },
@@ -1698,13 +1674,40 @@
       "exit_reason": "BREAKEVEN",
       "exit_price": 28730.25,
       "closed_at": "2026-11-02T15:58:00+00:00"
+    },
+    {
+      "id": "SOLUSD:SWEEP:L:2026-11-02T19:30:00+00:00",
+      "side": 1,
+      "setup": "Liquidity Low Sweep RETEST",
+      "entry_type": "RETEST",
+      "entry": 92.01,
+      "stop": 91.17328571428571,
+      "initial_stop": 91.17328571428571,
+      "tps": [
+        93.91,
+        94.3,
+        94.58
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-11-02T20:04:49.615948+00:00",
+      "last_tracking_bar": "2026-11-02T20:37:00+00:00",
+      "tracking_version": 2,
+      "tracking_initialized_at": "2026-11-02T20:04:49.615948+00:00",
+      "state": "CLOSED",
+      "exit_reason": "STOP",
+      "exit_price": 91.17328571428571,
+      "closed_at": "2026-11-02T20:39:00+00:00"
     }
   ],
   "last_analysis_slot": {
     "XAUUSD": "2026-11-02T20:00:00+00:00",
-    "NASDAQ": "2026-11-02T20:15:00+00:00",
+    "NASDAQ": "2026-11-02T21:00:00+00:00",
     "BTCUSD": "2026-11-02T16:00:00+00:00",
     "ETHUSD": "2026-11-02T16:00:00+00:00",
-    "SOLUSD": "2026-11-02T20:00:00+00:00"
+    "SOLUSD": "2026-11-02T21:00:00+00:00"
   }
 }
