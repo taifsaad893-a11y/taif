@@ -1,40 +1,40 @@
 {
   "last_signal": {
     "XAUUSD": "XAUUSD:BREAKOUT:L:2026-11-02T16:45:00+00:00",
-    "NASDAQ": "NASDAQ:BREAKOUT:L:2026-11-02T15:30:00+00:00",
+    "NASDAQ": "NASDAQ:BREAKOUT:S:2026-11-02T17:45:00+00:00",
     "SOLUSD": "SOLUSD:SWEEP:S:2026-11-02T14:00:00+00:00",
     "ETHUSD": "ETHUSD:BREAKOUT:S:2026-11-02T16:00:00+00:00",
     "BTCUSD": "BTCUSD:BREAKOUT:S:2026-11-02T16:00:00+00:00"
   },
   "watch_setup": {
-    "XAUUSD": {
-      "id": "XAUUSD:BREAKOUT:L:2026-11-02T16:45:00+00:00",
-      "key": "XAUUSD",
-      "side": 1,
+    "NASDAQ": {
+      "id": "NASDAQ:BREAKOUT:S:2026-11-02T17:45:00+00:00",
+      "key": "NASDAQ",
+      "side": -1,
       "setup_name": "Breakout",
       "grade": "A",
-      "score": 7.6,
+      "score": 8.5,
       "plan": {
-        "entry": 3968.633,
-        "zone_low": 3967.130846257143,
-        "zone_high": 3969.1337179142856,
-        "stop": 3946.301665642857,
+        "entry": 28530.25,
+        "zone_low": 28526.907857142858,
+        "zone_high": 28540.27642857143,
+        "stop": 28614.066071428573,
         "tps": [
-          4009.6231,
-          4029.98307,
-          4036.48657
+          28232.75,
+          28362.617857142854,
+          28278.80178571428
         ],
-        "risk": 22.331334357142623,
-        "atr15": 12.517947857142774,
-        "retest_confirm_buffer": 0.6258973928571387,
+        "risk": 83.8160714285732,
+        "atr15": 83.55357142857143,
+        "retest_confirm_buffer": 4.177678571428571,
         "structure_based": true,
-        "stop_structure": 3950.05705
+        "stop_structure": 28589.0
       },
-      "confirmation_end": "2026-11-02T16:45:00+00:00",
-      "created_at": "2026-11-02T17:01:37.204939+00:00",
-      "expires_at": "2026-11-02T17:45:00+00:00",
-      "touched": true,
-      "touch_time": "2026-11-02T17:02:37.205069+00:00"
+      "confirmation_end": "2026-11-02T17:45:00+00:00",
+      "created_at": "2026-11-02T18:06:26.157265+00:00",
+      "expires_at": "2026-11-02T18:45:00+00:00",
+      "touched": false,
+      "touch_time": null
     }
   },
   "active_trade": {
@@ -57,7 +57,7 @@
         false
       ],
       "opened_at": "2026-11-02T16:00:59.112738+00:00",
-      "last_tracking_bar": "2026-11-02T17:13:00+00:00",
+      "last_tracking_bar": "2026-11-02T18:19:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-02T16:00:59.112738+00:00",
       "state": "OPEN"
@@ -81,7 +81,7 @@
         false
       ],
       "opened_at": "2026-11-02T16:10:00.692731+00:00",
-      "last_tracking_bar": "2026-11-02T17:13:00+00:00",
+      "last_tracking_bar": "2026-11-02T18:19:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-02T16:10:00.692731+00:00",
       "state": "OPEN"
@@ -1683,10 +1683,10 @@
     }
   ],
   "last_analysis_slot": {
-    "XAUUSD": "2026-11-02T17:00:00+00:00",
-    "NASDAQ": "2026-11-02T17:00:00+00:00",
+    "XAUUSD": "2026-11-02T18:15:00+00:00",
+    "NASDAQ": "2026-11-02T18:00:00+00:00",
     "BTCUSD": "2026-11-02T16:00:00+00:00",
     "ETHUSD": "2026-11-02T16:00:00+00:00",
-    "SOLUSD": "2026-11-02T17:00:00+00:00"
+    "SOLUSD": "2026-11-02T18:15:00+00:00"
   }
 }
