@@ -1,12 +1,42 @@
 {
   "last_signal": {
     "XAUUSD": "XAUUSD:BREAKOUT:L:2026-11-03T13:45:00+00:00",
-    "NASDAQ": "NASDAQ:SWEEP:S:2026-11-03T13:45:00+00:00",
+    "NASDAQ": "NASDAQ:SWEEP:S:2026-11-03T16:15:00+00:00",
     "SOLUSD": "SOLUSD:SWEEP:S:2026-11-03T13:45:00+00:00",
     "ETHUSD": "ETHUSD:SWEEP:S:2026-11-03T13:45:00+00:00",
     "BTCUSD": "BTCUSD:SWEEP:S:2026-11-03T13:45:00+00:00"
   },
-  "watch_setup": {},
+  "watch_setup": {
+    "NASDAQ": {
+      "id": "NASDAQ:SWEEP:S:2026-11-03T16:15:00+00:00",
+      "key": "NASDAQ",
+      "side": -1,
+      "setup_name": "Liquidity High Sweep",
+      "grade": "B",
+      "score": 6.9,
+      "plan": {
+        "entry": 28395.0,
+        "zone_low": 28391.467142857142,
+        "zone_high": 28405.59857142857,
+        "stop": 28469.996428571427,
+        "tps": [
+          28232.75,
+          28215.75,
+          28161.0
+        ],
+        "risk": 74.9964285714268,
+        "atr15": 88.32142857142857,
+        "retest_confirm_buffer": 4.416071428571429,
+        "structure_based": true,
+        "stop_structure": 28443.5
+      },
+      "confirmation_end": "2026-11-03T16:15:00+00:00",
+      "created_at": "2026-11-03T16:27:32.630557+00:00",
+      "expires_at": "2026-11-03T17:15:00+00:00",
+      "touched": false,
+      "touch_time": null
+    }
+  },
   "active_trade": {},
   "closed": [
     {
@@ -1820,10 +1850,10 @@
     }
   ],
   "last_analysis_slot": {
-    "XAUUSD": "2026-11-03T15:30:00+00:00",
-    "NASDAQ": "2026-11-03T15:30:00+00:00",
-    "BTCUSD": "2026-11-03T15:30:00+00:00",
-    "ETHUSD": "2026-11-03T15:30:00+00:00",
-    "SOLUSD": "2026-11-03T15:30:00+00:00"
+    "XAUUSD": "2026-11-03T16:30:00+00:00",
+    "NASDAQ": "2026-11-03T16:15:00+00:00",
+    "BTCUSD": "2026-11-03T16:30:00+00:00",
+    "ETHUSD": "2026-11-03T16:30:00+00:00",
+    "SOLUSD": "2026-11-03T16:30:00+00:00"
   }
 }
