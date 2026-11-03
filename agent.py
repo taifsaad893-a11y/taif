@@ -1120,6 +1120,12 @@ def format_signal(signal, live_price, entry_status):
     age_seconds = int(entry_status["age_seconds"])
 
     rr = entry_rr(plan, signal["side"], live_price)
+    stop_reference = plan.get("stop_reference", "Market structure")
+    target_source = (
+        "Chart structure with R-based extensions as needed"
+        if plan.get("structure_based") else
+        f"{plan.get('market_targets', 0)}/3 from chart levels"
+    )
     volume_text = volume["label"]
     if volume["ratio"] is not None:
         volume_text += f" ({volume['ratio']:.2f}x)"
@@ -1132,11 +1138,11 @@ def format_signal(signal, live_price, entry_status):
         f"GRADE: {signal['grade']} | SCORE: {signal['score']}/10\n\n"
         f"ENTRY ZONE: {fmt(plan['zone_low'])} — {fmt(plan['zone_high'])}\n"
         f"LIVE: {fmt(live_price)}\n"
-        f"SL: {fmt(plan['stop'])} | {plan['stop_reference']}\n"
+        f"SL: {fmt(plan['stop'])} | {stop_reference}\n"
         f"TP1: {fmt(plan['tps'][0])}\n"
         f"TP2: {fmt(plan['tps'][1])}\n"
         f"TP3: {fmt(plan['tps'][2])}\n"
-        f"TARGETS: {plan['market_targets']}/3 from chart levels\n"
+        f"TARGETS: {target_source}\n"
         f"R:R TO TP1 AT LIVE PRICE: {max(0.0, rr):.2f}R\n\n"
         f"15M CONFIRMATION CLOSE: {confirmation_time:%Y-%m-%d %H:%M} Baghdad\n"
         f"ALERT AGE: {age_seconds}s\n"
