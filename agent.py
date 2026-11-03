@@ -29,7 +29,7 @@ A_SCORE = 7.5
 B_SCORE = 6.0
 BREAK_BUFFER_ATR = 0.05
 SWEEP_BUFFER_ATR = 0.02
-SL_BUFFER_ATR = 0.15
+SL_BUFFER_ATR = 0.25
 ENTRY_BACK_ATR = 0.12
 ENTRY_FRONT_ATR = 0.04
 MAX_ENTER_AGE_SECONDS = 120
@@ -417,31 +417,42 @@ def calculate_entry_zone(side, close, atr15):
         high = close + ENTRY_BACK_ATR * atr15
     return float(low), float(high)
 
-def build_trade_plan(side, setup_type, d15, reference_level, atr15):
+def build_trade_plan(side, setup_type, frames, reference_level, atr15):
+    d15 = frames["15m"]
     last = d15.iloc[-1]
     entry = float(last["c"])
+    edge = "l" if side == 1 else "h"
+    invalidation = float(last[edge])
+    if setup_type == "BREAKOUT":
+        extreme = min if side == 1 else max
+        invalidation = extreme(reference_level, *d15[edge].tail(3))
 
-    if side == 1:
-        if setup_type == "SWEEP":
-            stop = float(last["l"]) - SL_BUFFER_ATR * atr15
-        else:
-            stop = min(float(last["l"]), reference_level) - SL_BUFFER_ATR * atr15
-        risk = entry - stop
-    else:
-        if setup_type == "SWEEP":
-            stop = float(last["h"]) + SL_BUFFER_ATR * atr15
-        else:
-            stop = max(float(last["h"]), reference_level) + SL_BUFFER_ATR * atr15
-        risk = stop - entry
-
+    stop = invalidation - side * SL_BUFFER_ATR * atr15
+    risk = (entry - stop) * side
     if not math.isfinite(risk) or risk <= 0:
         return None
 
-    targets = [
-        entry + side * risk * MIN_RR,
-        entry + side * risk * 2.0,
-        entry + side * risk * 3.0,
-    ]
+    target_edge = "h" if side == 1 else "l"
+    levels = set()
+    for timeframe, lookback in (("15m", 40), ("1h", 24), ("4h", 20)):
+        prices = frames[timeframe][target_edge].tail(lookback)
+        signed = prices * side
+        pivots = signed[(signed > signed.shift(1)) & (signed >= signed.shift(-1))]
+        levels.update(float(level) for level in prices.loc[pivots.index])
+        levels.add(float(signed.max()) * side)
+
+    distances = sorted((level - entry) * side for level in levels
+                       if math.isfinite(level) and (level - entry) * side > 0)
+    target_distances = distances[:3]
+    for multiple in (MIN_RR, 2.0, 3.0):
+        if len(target_distances) == 3:
+            break
+        if not target_distances or multiple * risk > target_distances[-1]:
+            target_distances.append(multiple * risk)
+    while len(target_distances) < 3:
+        target_distances.append(target_distances[-1] + risk)
+
+    targets = [entry + side * distance for distance in target_distances]
     zone_low, zone_high = calculate_entry_zone(side, entry, atr15)
 
     return {
@@ -449,6 +460,8 @@ def build_trade_plan(side, setup_type, d15, reference_level, atr15):
         "zone_low": zone_low,
         "zone_high": zone_high,
         "stop": float(stop),
+        "stop_reference": "Sweep wick" if setup_type == "SWEEP" else "Breakout structure",
+        "market_targets": min(3, len(distances)),
         "tps": [float(x) for x in targets],
         "risk": float(risk),
         "atr15": float(atr15),
@@ -530,7 +543,7 @@ def detect_signal(key, frames):
     else:
         return None
 
-    plan = build_trade_plan(side, setup_type, d15, reference_level, atr15)
+    plan = build_trade_plan(side, setup_type, frames, reference_level, atr15)
     if not plan:
         return None
 
@@ -559,6 +572,13 @@ def detect_signal(key, frames):
 # ENTRY / WATCH
 # =========================================================
 
+def entry_rr(plan, side, price):
+    risk = (price - plan["stop"]) * side
+    if risk <= 0:
+        return 0.0
+    return (plan["tps"][0] - price) * side / risk
+
+
 def initial_entry_status(signal, live_price, now):
     plan = signal["plan"]
     age_seconds = max(0.0, (now - signal["confirmation_end"]).total_seconds())
@@ -572,7 +592,8 @@ def initial_entry_status(signal, live_price, now):
             "age_seconds": age_seconds,
         }
 
-    if age_seconds <= MAX_ENTER_AGE_SECONDS and inside:
+    rr = entry_rr(plan, signal["side"], live_price)
+    if age_seconds <= MAX_ENTER_AGE_SECONDS and inside and rr + 1e-9 >= MIN_RR:
         return {
             "status": "ENTER NOW",
             "tradable": True,
@@ -582,6 +603,8 @@ def initial_entry_status(signal, live_price, now):
 
     return {
         "status": (
+            "WAIT FOR BETTER ENTRY — TP1 BELOW MIN R:R"
+            if rr + 1e-9 < MIN_RR else
             "WAIT FOR RETEST CONFIRMATION"
             if inside else
             "WAIT FOR RETEST — DO NOT CHASE"
@@ -744,11 +767,12 @@ def process_watch(st, key, live_price, now):
             False,
         )
 
+    rr_tp1 = entry_rr(plan, side, live_price)
+    if rr_tp1 + 1e-9 < MIN_RR:
+        return None, False
+
     st["watch_setup"].pop(key, None)
     open_trade_from_watch(st, watch, live_price, now)
-
-    current_risk = max(abs(live_price - plan["stop"]), 1e-9)
-    rr_tp1 = abs(plan["tps"][0] - live_price) / current_risk
 
     return (
         f"✅ {key} | ENTER ON RETEST\n"
@@ -1095,6 +1119,7 @@ def format_signal(signal, live_price, entry_status):
     confirmation_time = signal["confirmation_end"].tz_convert(BAGHDAD)
     age_seconds = int(entry_status["age_seconds"])
 
+    rr = entry_rr(plan, signal["side"], live_price)
     volume_text = volume["label"]
     if volume["ratio"] is not None:
         volume_text += f" ({volume['ratio']:.2f}x)"
@@ -1107,10 +1132,12 @@ def format_signal(signal, live_price, entry_status):
         f"GRADE: {signal['grade']} | SCORE: {signal['score']}/10\n\n"
         f"ENTRY ZONE: {fmt(plan['zone_low'])} — {fmt(plan['zone_high'])}\n"
         f"LIVE: {fmt(live_price)}\n"
-        f"SL: {fmt(plan['stop'])}\n"
-        f"TP1: {fmt(plan['tps'][0])} (1.5R)\n"
-        f"TP2: {fmt(plan['tps'][1])} (2.0R)\n"
-        f"TP3: {fmt(plan['tps'][2])} (3.0R)\n\n"
+        f"SL: {fmt(plan['stop'])} | {plan['stop_reference']}\n"
+        f"TP1: {fmt(plan['tps'][0])}\n"
+        f"TP2: {fmt(plan['tps'][1])}\n"
+        f"TP3: {fmt(plan['tps'][2])}\n"
+        f"TARGETS: {plan['market_targets']}/3 from chart levels\n"
+        f"R:R TO TP1 AT LIVE PRICE: {max(0.0, rr):.2f}R\n\n"
         f"15M CONFIRMATION CLOSE: {confirmation_time:%Y-%m-%d %H:%M} Baghdad\n"
         f"ALERT AGE: {age_seconds}s\n"
         f"VOLUME: {volume_text}\n"
