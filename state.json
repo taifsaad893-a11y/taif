@@ -1,98 +1,69 @@
 {
   "last_signal": {
     "XAUUSD": "XAUUSD:BREAKOUT:L:2026-11-04T06:30:00+00:00",
-    "NASDAQ": "NASDAQ:BREAKOUT:L:2026-11-04T07:15:00+00:00",
-    "SOLUSD": "SOLUSD:SWEEP:S:2026-11-04T06:00:00+00:00",
-    "ETHUSD": "ETHUSD:SWEEP:S:2026-11-04T08:00:00+00:00",
-    "BTCUSD": "BTCUSD:BREAKOUT:L:2026-11-04T07:30:00+00:00"
+    "NASDAQ": "NASDAQ:SWEEP:S:2026-11-04T08:30:00+00:00",
+    "SOLUSD": "SOLUSD:SWEEP:S:2026-11-04T08:30:00+00:00",
+    "ETHUSD": "ETHUSD:BREAKOUT:L:2026-11-04T08:30:00+00:00",
+    "BTCUSD": "BTCUSD:SWEEP:S:2026-11-04T08:30:00+00:00"
   },
   "watch_setup": {
     "NASDAQ": {
-      "id": "NASDAQ:BREAKOUT:L:2026-11-04T07:15:00+00:00",
+      "id": "NASDAQ:SWEEP:S:2026-11-04T08:30:00+00:00",
       "key": "NASDAQ",
-      "side": 1,
-      "setup_name": "Breakout",
-      "grade": "B",
-      "score": 6.8,
-      "plan": {
-        "entry": 28268.25,
-        "zone_low": 28256.254285714287,
-        "zone_high": 28272.248571428572,
-        "stop": 28149.010714285716,
-        "tps": [
-          28512.0,
-          28831.5,
-          28860.5
-        ],
-        "risk": 119.23928571428405,
-        "atr15": 99.96428571428571,
-        "retest_confirm_buffer": 4.998214285714286,
-        "structure_based": true,
-        "stop_structure": 28179.0
-      },
-      "confirmation_end": "2026-11-04T07:15:00+00:00",
-      "created_at": "2026-11-04T08:00:22.486973+00:00",
-      "expires_at": "2026-11-04T08:15:00+00:00",
-      "touched": true,
-      "touch_time": "2026-11-04T08:01:22.494327+00:00"
-    },
-    "BTCUSD": {
-      "id": "BTCUSD:BREAKOUT:L:2026-11-04T07:30:00+00:00",
-      "key": "BTCUSD",
-      "side": 1,
-      "setup_name": "Breakout",
-      "grade": "B",
-      "score": 6.4,
-      "plan": {
-        "entry": 78301.7,
-        "zone_low": 78262.568,
-        "zone_high": 78314.74399999999,
-        "stop": 77935.17,
-        "tps": [
-          78866.5,
-          80849.9,
-          80955.6
-        ],
-        "risk": 366.52999999999884,
-        "atr15": 326.1000000000027,
-        "retest_confirm_buffer": 16.305000000000135,
-        "structure_based": true,
-        "stop_structure": 78033.0
-      },
-      "confirmation_end": "2026-11-04T07:30:00+00:00",
-      "created_at": "2026-11-04T08:00:23.555755+00:00",
-      "expires_at": "2026-11-04T08:30:00+00:00",
-      "touched": true,
-      "touch_time": "2026-11-04T08:04:00+00:00"
-    },
-    "ETHUSD": {
-      "id": "ETHUSD:SWEEP:S:2026-11-04T08:00:00+00:00",
-      "key": "ETHUSD",
       "side": -1,
       "setup_name": "Liquidity High Sweep",
       "grade": "B",
       "score": 7.3,
       "plan": {
-        "entry": 2303.7,
-        "zone_low": 2303.296714285714,
-        "zone_high": 2304.909857142857,
-        "stop": 2316.7046428571425,
+        "entry": 28346.75,
+        "zone_low": 28343.51785714286,
+        "zone_high": 28356.446428571428,
+        "stop": 28449.741071428572,
         "tps": [
-          2282.16,
-          2277.29,
-          2264.28
+          28131.0,
+          28114.25,
+          27732.5
         ],
-        "risk": 13.004642857142699,
-        "atr15": 10.082142857142896,
-        "retest_confirm_buffer": 0.5041071428571449,
+        "risk": 102.99107142857247,
+        "atr15": 80.80357142857143,
+        "retest_confirm_buffer": 4.040178571428572,
         "structure_based": true,
-        "stop_structure": 2313.68
+        "stop_structure": 28425.5
       },
-      "confirmation_end": "2026-11-04T08:00:00+00:00",
-      "created_at": "2026-11-04T08:00:25.880105+00:00",
-      "expires_at": "2026-11-04T09:00:00+00:00",
+      "confirmation_end": "2026-11-04T08:30:00+00:00",
+      "created_at": "2026-11-04T08:58:17.579781+00:00",
+      "expires_at": "2026-11-04T09:30:00+00:00",
       "touched": true,
-      "touch_time": "2026-11-04T08:02:00+00:00"
+      "touch_time": "2026-11-04T09:08:17.573262+00:00"
+    },
+    "BTCUSD": {
+      "id": "BTCUSD:SWEEP:S:2026-11-04T08:30:00+00:00",
+      "key": "BTCUSD",
+      "side": -1,
+      "setup_name": "Liquidity High Sweep",
+      "grade": "B",
+      "score": 6.0,
+      "plan": {
+        "entry": 78372.6,
+        "zone_low": 78362.48371428571,
+        "zone_high": 78402.94885714287,
+        "stop": 78564.67214285715,
+        "tps": [
+          78023.5,
+          77916.7,
+          77738.0
+        ],
+        "risk": 192.07214285714144,
+        "atr15": 252.9071428571437,
+        "retest_confirm_buffer": 12.645357142857186,
+        "structure_based": true,
+        "stop_structure": 78488.8
+      },
+      "confirmation_end": "2026-11-04T08:30:00+00:00",
+      "created_at": "2026-11-04T08:58:18.053494+00:00",
+      "expires_at": "2026-11-04T09:30:00+00:00",
+      "touched": true,
+      "touch_time": "2026-11-04T09:02:00+00:00"
     }
   },
   "active_trade": {
@@ -115,9 +86,57 @@
         false
       ],
       "opened_at": "2026-11-04T06:37:40.085941+00:00",
-      "last_tracking_bar": "2026-11-04T08:11:00+00:00",
+      "last_tracking_bar": "2026-11-04T09:09:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-04T06:37:40.085941+00:00",
+      "state": "OPEN"
+    },
+    "SOLUSD": {
+      "id": "SOLUSD:SWEEP:S:2026-11-04T08:30:00+00:00",
+      "side": -1,
+      "setup": "Liquidity High Sweep RETEST",
+      "entry_type": "RETEST",
+      "entry": 93.23,
+      "stop": 93.65878571428571,
+      "initial_stop": 93.65878571428571,
+      "tps": [
+        92.47,
+        92.4,
+        91.63
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-11-04T09:01:20.296863+00:00",
+      "last_tracking_bar": "2026-11-04T09:10:00+00:00",
+      "tracking_version": 2,
+      "tracking_initialized_at": "2026-11-04T09:01:20.296863+00:00",
+      "state": "OPEN"
+    },
+    "ETHUSD": {
+      "id": "ETHUSD:BREAKOUT:L:2026-11-04T08:30:00+00:00",
+      "side": 1,
+      "setup": "Breakout RETEST",
+      "entry_type": "RETEST",
+      "entry": 2319.82,
+      "stop": 2311.5325,
+      "initial_stop": 2311.5325,
+      "tps": [
+        2344.54,
+        2365.29,
+        2379.36
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-11-04T09:04:18.388900+00:00",
+      "last_tracking_bar": "2026-11-04T09:10:00+00:00",
+      "tracking_version": 2,
+      "tracking_initialized_at": "2026-11-04T09:04:18.388900+00:00",
       "state": "OPEN"
     }
   },
@@ -2096,9 +2115,9 @@
   ],
   "last_analysis_slot": {
     "XAUUSD": "2026-11-04T06:30:00+00:00",
-    "NASDAQ": "2026-11-04T08:00:00+00:00",
-    "BTCUSD": "2026-11-04T08:00:00+00:00",
-    "ETHUSD": "2026-11-04T08:00:00+00:00",
-    "SOLUSD": "2026-11-04T08:00:00+00:00"
+    "NASDAQ": "2026-11-04T08:45:00+00:00",
+    "BTCUSD": "2026-11-04T08:45:00+00:00",
+    "ETHUSD": "2026-11-04T08:45:00+00:00",
+    "SOLUSD": "2026-11-04T08:45:00+00:00"
   }
 }
