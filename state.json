@@ -27,7 +27,7 @@
         false
       ],
       "opened_at": "2026-11-04T06:37:40.085941+00:00",
-      "last_tracking_bar": "2026-11-04T17:49:00+00:00",
+      "last_tracking_bar": "2026-11-04T18:49:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-04T06:37:40.085941+00:00",
       "state": "OPEN"
@@ -51,7 +51,7 @@
         false
       ],
       "opened_at": "2026-11-04T15:43:01.157863+00:00",
-      "last_tracking_bar": "2026-11-04T17:40:00+00:00",
+      "last_tracking_bar": "2026-11-04T18:40:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-04T15:43:01.157863+00:00",
       "state": "OPEN"
@@ -75,7 +75,7 @@
         false
       ],
       "opened_at": "2026-11-04T15:50:04.362289+00:00",
-      "last_tracking_bar": "2026-11-04T17:49:00+00:00",
+      "last_tracking_bar": "2026-11-04T18:49:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-04T15:50:04.362289+00:00",
       "state": "OPEN"
@@ -2138,8 +2138,8 @@
   "last_analysis_slot": {
     "XAUUSD": "2026-11-04T06:30:00+00:00",
     "NASDAQ": "2026-11-04T15:30:00+00:00",
-    "BTCUSD": "2026-11-04T17:45:00+00:00",
-    "ETHUSD": "2026-11-04T17:45:00+00:00",
+    "BTCUSD": "2026-11-04T18:45:00+00:00",
+    "ETHUSD": "2026-11-04T18:45:00+00:00",
     "SOLUSD": "2026-11-04T15:45:00+00:00"
   }
 }
