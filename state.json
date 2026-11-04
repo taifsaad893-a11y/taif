@@ -14,7 +14,7 @@
       "setup": "Breakout RETEST",
       "entry_type": "RETEST",
       "entry": 4017.35497,
-      "stop": 4001.012609785714,
+      "stop": 4017.35497,
       "initial_stop": 4001.012609785714,
       "tps": [
         4070.16973,
@@ -22,12 +22,12 @@
         4056.9401706428566
       ],
       "hits": [
-        false,
+        true,
         false,
         false
       ],
       "opened_at": "2026-11-04T06:37:40.085941+00:00",
-      "last_tracking_bar": "2026-11-04T16:50:00+00:00",
+      "last_tracking_bar": "2026-11-04T17:49:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-04T06:37:40.085941+00:00",
       "state": "OPEN"
@@ -51,7 +51,7 @@
         false
       ],
       "opened_at": "2026-11-04T15:43:01.157863+00:00",
-      "last_tracking_bar": "2026-11-04T16:41:00+00:00",
+      "last_tracking_bar": "2026-11-04T17:40:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-04T15:43:01.157863+00:00",
       "state": "OPEN"
@@ -75,7 +75,7 @@
         false
       ],
       "opened_at": "2026-11-04T15:50:04.362289+00:00",
-      "last_tracking_bar": "2026-11-04T16:50:00+00:00",
+      "last_tracking_bar": "2026-11-04T17:49:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-04T15:50:04.362289+00:00",
       "state": "OPEN"
@@ -2138,8 +2138,8 @@
   "last_analysis_slot": {
     "XAUUSD": "2026-11-04T06:30:00+00:00",
     "NASDAQ": "2026-11-04T15:30:00+00:00",
-    "BTCUSD": "2026-11-04T16:45:00+00:00",
-    "ETHUSD": "2026-11-04T16:45:00+00:00",
+    "BTCUSD": "2026-11-04T17:45:00+00:00",
+    "ETHUSD": "2026-11-04T17:45:00+00:00",
     "SOLUSD": "2026-11-04T15:45:00+00:00"
   }
 }
