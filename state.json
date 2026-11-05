@@ -4,7 +4,7 @@
     "NASDAQ": "NASDAQ:BREAKOUT:S:2026-11-05T14:30:00+00:00",
     "SOLUSD": "SOLUSD:SWEEP:L:2026-11-05T18:15:00+00:00",
     "ETHUSD": "ETHUSD:BREAKOUT:S:2026-11-05T21:15:00+00:00",
-    "BTCUSD": "BTCUSD:BREAKOUT:S:2026-11-05T15:00:00+00:00"
+    "BTCUSD": "BTCUSD:SWEEP:L:2026-11-05T23:00:00+00:00"
   },
   "watch_setup": {},
   "active_trade": {
@@ -27,7 +27,7 @@
         false
       ],
       "opened_at": "2026-11-05T22:07:03.429677+00:00",
-      "last_tracking_bar": "2026-11-05T22:12:00+00:00",
+      "last_tracking_bar": "2026-11-05T23:01:00+00:00",
       "tracking_version": 2,
       "tracking_initialized_at": "2026-11-05T22:07:03.429677+00:00",
       "state": "OPEN"
@@ -2223,10 +2223,10 @@
     }
   ],
   "last_analysis_slot": {
-    "XAUUSD": "2026-11-05T22:00:00+00:00",
+    "XAUUSD": "2026-11-05T23:00:00+00:00",
     "NASDAQ": "2026-11-05T22:00:00+00:00",
-    "BTCUSD": "2026-11-05T22:00:00+00:00",
+    "BTCUSD": "2026-11-05T23:00:00+00:00",
     "ETHUSD": "2026-11-05T21:15:00+00:00",
-    "SOLUSD": "2026-11-05T22:00:00+00:00"
+    "SOLUSD": "2026-11-05T23:00:00+00:00"
   }
 }
