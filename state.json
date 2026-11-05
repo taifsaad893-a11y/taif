@@ -7,32 +7,7 @@
     "BTCUSD": "BTCUSD:BREAKOUT:S:2026-11-05T15:00:00+00:00"
   },
   "watch_setup": {},
-  "active_trade": {
-    "SOLUSD": {
-      "id": "SOLUSD:SWEEP:L:2026-11-05T16:00:00+00:00",
-      "side": 1,
-      "setup": "Liquidity Low Sweep RETEST",
-      "entry_type": "RETEST",
-      "entry": 90.38,
-      "stop": 88.92435714285713,
-      "initial_stop": 88.92435714285713,
-      "tps": [
-        92.6,
-        93.89,
-        94.17
-      ],
-      "hits": [
-        false,
-        false,
-        false
-      ],
-      "opened_at": "2026-11-05T16:03:24.301202+00:00",
-      "last_tracking_bar": "2026-11-05T17:25:00+00:00",
-      "tracking_version": 2,
-      "tracking_initialized_at": "2026-11-05T16:03:24.301202+00:00",
-      "state": "OPEN"
-    }
-  },
+  "active_trade": {},
   "closed": [
     {
       "id": "XAUUSD:BREAKOUT:S:2026-10-27T00:00:00+00:00",
@@ -2193,13 +2168,40 @@
       "exit_reason": "TP3",
       "exit_price": 92.34,
       "closed_at": "2026-11-05T15:02:00+00:00"
+    },
+    {
+      "id": "SOLUSD:SWEEP:L:2026-11-05T16:00:00+00:00",
+      "side": 1,
+      "setup": "Liquidity Low Sweep RETEST",
+      "entry_type": "RETEST",
+      "entry": 90.38,
+      "stop": 88.92435714285713,
+      "initial_stop": 88.92435714285713,
+      "tps": [
+        92.6,
+        93.89,
+        94.17
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-11-05T16:03:24.301202+00:00",
+      "last_tracking_bar": "2026-11-05T17:59:00+00:00",
+      "tracking_version": 2,
+      "tracking_initialized_at": "2026-11-05T16:03:24.301202+00:00",
+      "state": "CLOSED",
+      "exit_reason": "STOP",
+      "exit_price": 88.92435714285713,
+      "closed_at": "2026-11-05T18:01:00+00:00"
     }
   ],
   "last_analysis_slot": {
-    "XAUUSD": "2026-11-05T17:15:00+00:00",
-    "NASDAQ": "2026-11-05T17:15:00+00:00",
-    "BTCUSD": "2026-11-05T17:15:00+00:00",
-    "ETHUSD": "2026-11-05T17:15:00+00:00",
-    "SOLUSD": "2026-11-05T16:00:00+00:00"
+    "XAUUSD": "2026-11-05T18:00:00+00:00",
+    "NASDAQ": "2026-11-05T18:00:00+00:00",
+    "BTCUSD": "2026-11-05T18:00:00+00:00",
+    "ETHUSD": "2026-11-05T18:00:00+00:00",
+    "SOLUSD": "2026-11-05T18:00:00+00:00"
   }
 }
