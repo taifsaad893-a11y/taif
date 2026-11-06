@@ -45,7 +45,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
-          LOOP_SCANS: "15"
+          LOOP_SCANS: "1"
           SCAN_INTERVAL_SECONDS: "60"
           STATE_FILE: "state.json"
         run: |
