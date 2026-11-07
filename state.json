@@ -2,11 +2,70 @@
   "last_signal": {
     "XAUUSD": "XAUUSD:BREAKOUT:L:2026-11-06T19:00:00+00:00",
     "NASDAQ": "NASDAQ:BREAKOUT:L:2026-11-06T15:00:00+00:00",
-    "SOLUSD": "SOLUSD:SWEEP:S:2026-11-06T15:00:00+00:00",
+    "SOLUSD": "SOLUSD:BREAKOUT:S:2026-11-07T03:45:00+00:00",
     "ETHUSD": "ETHUSD:BREAKOUT:L:2026-11-06T22:00:00+00:00",
-    "BTCUSD": "BTCUSD:SWEEP:S:2026-11-06T22:15:00+00:00"
+    "BTCUSD": "BTCUSD:BREAKOUT:S:2026-11-07T03:45:00+00:00"
   },
-  "watch_setup": {},
+  "watch_setup": {
+    "BTCUSD": {
+      "id": "BTCUSD:BREAKOUT:S:2026-11-07T03:45:00+00:00",
+      "key": "BTCUSD",
+      "side": -1,
+      "setup_name": "Breakout",
+      "grade": "A",
+      "score": 8.1,
+      "plan": {
+        "entry": 75796.5,
+        "zone_low": 75793.20314285715,
+        "zone_high": 75806.39057142856,
+        "stop": 75866.32642857144,
+        "tps": [
+          75684.5,
+          75558.3,
+          75501.5
+        ],
+        "risk": 69.82642857143946,
+        "atr15": 82.42142857142919,
+        "retest_confirm_buffer": 4.12107142857146,
+        "structure_based": true,
+        "stop_structure": 75841.6
+      },
+      "confirmation_end": "2026-11-07T03:45:00+00:00",
+      "created_at": "2026-11-07T04:22:48.946318+00:00",
+      "expires_at": "2026-11-07T04:45:00+00:00",
+      "touched": false,
+      "touch_time": null
+    },
+    "SOLUSD": {
+      "id": "SOLUSD:BREAKOUT:S:2026-11-07T03:45:00+00:00",
+      "key": "SOLUSD",
+      "side": -1,
+      "setup_name": "Breakout",
+      "grade": "A",
+      "score": 8.1,
+      "plan": {
+        "entry": 89.78,
+        "zone_low": 89.77228571428572,
+        "zone_high": 89.80314285714286,
+        "stop": 89.97785714285715,
+        "tps": [
+          89.15,
+          88.96,
+          88.76
+        ],
+        "risk": 0.19785714285714562,
+        "atr15": 0.19285714285714103,
+        "retest_confirm_buffer": 0.009642857142857052,
+        "structure_based": true,
+        "stop_structure": 89.92
+      },
+      "confirmation_end": "2026-11-07T03:45:00+00:00",
+      "created_at": "2026-11-07T04:22:53.083338+00:00",
+      "expires_at": "2026-11-07T04:45:00+00:00",
+      "touched": false,
+      "touch_time": null
+    }
+  },
   "active_trade": {},
   "closed": [
     {
@@ -2335,8 +2394,8 @@
   "last_analysis_slot": {
     "XAUUSD": "2026-11-06T23:30:00+00:00",
     "NASDAQ": "2026-11-06T22:00:00+00:00",
-    "BTCUSD": "2026-11-07T03:15:00+00:00",
-    "ETHUSD": "2026-11-07T03:15:00+00:00",
-    "SOLUSD": "2026-11-07T03:15:00+00:00"
+    "BTCUSD": "2026-11-07T04:15:00+00:00",
+    "ETHUSD": "2026-11-07T04:15:00+00:00",
+    "SOLUSD": "2026-11-07T04:15:00+00:00"
   }
 }
