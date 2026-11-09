@@ -1,38 +1,43 @@
 {
   "last_signal": {
     "XAUUSD": "XAUUSD:BREAKOUT:L:2026-11-09T01:00:00+00:00",
-    "NASDAQ": "NASDAQ:BREAKOUT:L:2026-11-06T15:00:00+00:00",
+    "NASDAQ": "NASDAQ:BREAKOUT:S:2026-11-09T07:45:00+00:00",
     "SOLUSD": "SOLUSD:BREAKOUT:S:2026-11-08T17:00:00+00:00",
     "ETHUSD": "ETHUSD:BREAKOUT:S:2026-11-08T17:00:00+00:00",
-    "BTCUSD": "BTCUSD:BREAKOUT:S:2026-11-08T17:00:00+00:00"
+    "BTCUSD": "BTCUSD:SWEEP:L:2026-11-09T07:00:00+00:00"
   },
-  "watch_setup": {},
-  "active_trade": {
-    "XAUUSD": {
-      "id": "XAUUSD:BREAKOUT:L:2026-11-09T01:00:00+00:00",
-      "side": 1,
-      "setup": "Breakout",
-      "entry_type": "DIRECT",
-      "entry": 4103.91103,
-      "stop": 4088.955279642857,
-      "initial_stop": 4088.955279642857,
-      "tps": [
-        4139.77734,
-        4147.60021,
-        4150.512401071427
-      ],
-      "hits": [
-        false,
-        false,
-        false
-      ],
-      "opened_at": "2026-11-09T01:00:26.068350+00:00",
-      "last_tracking_bar": null,
-      "tracking_version": 2,
-      "tracking_initialized_at": "2026-11-09T01:00:26.068350+00:00",
-      "state": "OPEN"
+  "watch_setup": {
+    "NASDAQ": {
+      "id": "NASDAQ:BREAKOUT:S:2026-11-09T07:45:00+00:00",
+      "key": "NASDAQ",
+      "side": -1,
+      "setup_name": "Breakout",
+      "grade": "A",
+      "score": 8.9,
+      "plan": {
+        "entry": 26870.0,
+        "zone_low": 26867.225,
+        "zone_high": 26878.325,
+        "stop": 26983.8125,
+        "tps": [
+          26366.5,
+          26642.375,
+          26528.5625
+        ],
+        "risk": 113.8125,
+        "atr15": 69.375,
+        "retest_confirm_buffer": 3.46875,
+        "structure_based": true,
+        "stop_structure": 26963.0
+      },
+      "confirmation_end": "2026-11-09T07:45:00+00:00",
+      "created_at": "2026-11-09T08:00:35.516635+00:00",
+      "expires_at": "2026-11-09T08:45:00+00:00",
+      "touched": false,
+      "touch_time": null
     }
   },
+  "active_trade": {},
   "closed": [
     {
       "id": "XAUUSD:BREAKOUT:S:2026-10-27T00:00:00+00:00",
@@ -2355,13 +2360,40 @@
       "exit_reason": "STOP",
       "exit_price": 90.22385714285714,
       "closed_at": "2026-11-06T12:55:00+00:00"
+    },
+    {
+      "id": "XAUUSD:BREAKOUT:L:2026-11-09T01:00:00+00:00",
+      "side": 1,
+      "setup": "Breakout",
+      "entry_type": "DIRECT",
+      "entry": 4103.91103,
+      "stop": 4088.955279642857,
+      "initial_stop": 4088.955279642857,
+      "tps": [
+        4139.77734,
+        4147.60021,
+        4150.512401071427
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-11-09T01:00:26.068350+00:00",
+      "last_tracking_bar": "2026-11-09T07:46:00+00:00",
+      "tracking_version": 2,
+      "tracking_initialized_at": "2026-11-09T01:00:26.068350+00:00",
+      "state": "CLOSED",
+      "exit_reason": "STOP",
+      "exit_price": 4088.955279642857,
+      "closed_at": "2026-11-09T07:48:00+00:00"
     }
   ],
   "last_analysis_slot": {
     "XAUUSD": "2026-11-09T01:00:00+00:00",
-    "NASDAQ": "2026-11-09T01:00:00+00:00",
-    "BTCUSD": "2026-11-09T01:00:00+00:00",
-    "ETHUSD": "2026-11-09T01:00:00+00:00",
-    "SOLUSD": "2026-11-09T01:00:00+00:00"
+    "NASDAQ": "2026-11-09T08:00:00+00:00",
+    "BTCUSD": "2026-11-09T08:00:00+00:00",
+    "ETHUSD": "2026-11-09T08:00:00+00:00",
+    "SOLUSD": "2026-11-09T08:00:00+00:00"
   }
 }
