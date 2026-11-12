@@ -6,95 +6,7 @@
     "ETHUSD": "ETHUSD:BREAKOUT:S:2026-11-11T23:15:00+00:00",
     "BTCUSD": "BTCUSD:BREAKOUT:S:2026-11-11T23:15:00+00:00"
   },
-  "watch_setup": {
-    "BTCUSD": {
-      "id": "BTCUSD:BREAKOUT:S:2026-11-11T23:15:00+00:00",
-      "key": "BTCUSD",
-      "side": -1,
-      "setup_name": "Breakout",
-      "grade": "A",
-      "score": 8.9,
-      "plan": {
-        "entry": 73519.0,
-        "zone_low": 73509.93714285715,
-        "zone_high": 73546.18857142857,
-        "stop": 73951.67142857143,
-        "tps": [
-          72727.3,
-          72653.65714285715,
-          72220.98571428572
-        ],
-        "risk": 432.6714285714261,
-        "atr15": 226.57142857143066,
-        "retest_confirm_buffer": 11.328571428571534,
-        "structure_based": true,
-        "stop_structure": 73883.7
-      },
-      "confirmation_end": "2026-11-11T23:15:00+00:00",
-      "created_at": "2026-11-11T23:40:27.923233+00:00",
-      "expires_at": "2026-11-12T00:15:00+00:00",
-      "touched": false,
-      "touch_time": null
-    },
-    "ETHUSD": {
-      "id": "ETHUSD:BREAKOUT:S:2026-11-11T23:15:00+00:00",
-      "key": "ETHUSD",
-      "side": -1,
-      "setup_name": "Breakout",
-      "grade": "A",
-      "score": 8.9,
-      "plan": {
-        "entry": 2037.2,
-        "zone_low": 2036.8715142857143,
-        "zone_high": 2038.185457142857,
-        "stop": 2055.523642857143,
-        "tps": [
-          2005.0,
-          2000.5527142857143,
-          1982.2290714285714
-        ],
-        "risk": 18.323642857142886,
-        "atr15": 8.212142857142842,
-        "retest_confirm_buffer": 0.4106071428571421,
-        "structure_based": true,
-        "stop_structure": 2053.06
-      },
-      "confirmation_end": "2026-11-11T23:15:00+00:00",
-      "created_at": "2026-11-11T23:40:30.617160+00:00",
-      "expires_at": "2026-11-12T00:15:00+00:00",
-      "touched": false,
-      "touch_time": null
-    },
-    "SOLUSD": {
-      "id": "SOLUSD:BREAKOUT:S:2026-11-11T23:00:00+00:00",
-      "key": "SOLUSD",
-      "side": -1,
-      "setup_name": "Breakout",
-      "grade": "A",
-      "score": 8.9,
-      "plan": {
-        "entry": 83.51,
-        "zone_low": 83.4969142857143,
-        "zone_high": 83.54925714285714,
-        "stop": 83.82814285714286,
-        "tps": [
-          82.9,
-          82.87,
-          82.3
-        ],
-        "risk": 0.3181428571428597,
-        "atr15": 0.32714285714285396,
-        "retest_confirm_buffer": 0.0163571428571427,
-        "structure_based": true,
-        "stop_structure": 83.73
-      },
-      "confirmation_end": "2026-11-11T23:00:00+00:00",
-      "created_at": "2026-11-11T23:40:32.881680+00:00",
-      "expires_at": "2026-11-12T00:00:00+00:00",
-      "touched": false,
-      "touch_time": null
-    }
-  },
+  "watch_setup": {},
   "active_trade": {},
   "closed": [
     {
@@ -2448,8 +2360,8 @@
     }
   ],
   "last_analysis_slot": {
-    "XAUUSD": "2026-11-11T17:15:00+00:00",
-    "NASDAQ": "2026-11-11T17:15:00+00:00",
+    "XAUUSD": "2026-11-12T04:15:00+00:00",
+    "NASDAQ": "2026-11-12T04:15:00+00:00",
     "BTCUSD": "2026-11-11T23:30:00+00:00",
     "ETHUSD": "2026-11-11T23:30:00+00:00",
     "SOLUSD": "2026-11-11T23:30:00+00:00"
