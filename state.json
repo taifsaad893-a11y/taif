@@ -3,36 +3,36 @@
     "XAUUSD": "XAUUSD:SWEEP:S:2026-11-12T20:30:00+00:00",
     "NASDAQ": "NASDAQ:BREAKOUT:L:2026-11-11T17:00:00+00:00",
     "SOLUSD": "SOLUSD:BREAKOUT:S:2026-11-11T23:00:00+00:00",
-    "ETHUSD": "ETHUSD:BREAKOUT:S:2026-11-12T12:00:00+00:00",
+    "ETHUSD": "ETHUSD:BREAKOUT:S:2026-11-13T00:45:00+00:00",
     "BTCUSD": "BTCUSD:SWEEP:L:2026-11-12T12:00:00+00:00"
   },
   "watch_setup": {
-    "XAUUSD": {
-      "id": "XAUUSD:SWEEP:S:2026-11-12T20:30:00+00:00",
-      "key": "XAUUSD",
+    "ETHUSD": {
+      "id": "ETHUSD:BREAKOUT:S:2026-11-13T00:45:00+00:00",
+      "key": "ETHUSD",
       "side": -1,
-      "setup_name": "Liquidity High Sweep",
-      "grade": "B",
-      "score": 7.3,
+      "setup_name": "Breakout",
+      "grade": "A",
+      "score": 8.9,
       "plan": {
-        "entry": 3884.51896,
-        "zone_low": 3884.2684959999997,
-        "zone_high": 3885.270352,
-        "stop": 3889.54392,
+        "entry": 2005.84,
+        "zone_low": 2005.5897714285713,
+        "zone_high": 2006.5906857142857,
+        "stop": 2015.8767142857143,
         "tps": [
-          3876.71876,
-          3870.65237,
-          3865.92453
+          1987.31,
+          1983.48,
+          1975.7298571428566
         ],
-        "risk": 5.024960000000192,
-        "atr15": 6.261599999999979,
-        "retest_confirm_buffer": 0.31307999999999897,
+        "risk": 10.036714285714424,
+        "atr15": 6.255714285714281,
+        "retest_confirm_buffer": 0.31278571428571406,
         "structure_based": true,
-        "stop_structure": 3887.66544
+        "stop_structure": 2014.0
       },
-      "confirmation_end": "2026-11-12T20:30:00+00:00",
-      "created_at": "2026-11-12T20:51:52.167513+00:00",
-      "expires_at": "2026-11-12T21:30:00+00:00",
+      "confirmation_end": "2026-11-13T00:45:00+00:00",
+      "created_at": "2026-11-13T01:44:48.792500+00:00",
+      "expires_at": "2026-11-13T01:45:00+00:00",
       "touched": false,
       "touch_time": null
     }
@@ -2391,9 +2391,9 @@
   ],
   "last_analysis_slot": {
     "XAUUSD": "2026-11-12T20:45:00+00:00",
-    "NASDAQ": "2026-11-12T20:45:00+00:00",
-    "BTCUSD": "2026-11-12T20:45:00+00:00",
-    "ETHUSD": "2026-11-12T20:45:00+00:00",
-    "SOLUSD": "2026-11-12T20:45:00+00:00"
+    "NASDAQ": "2026-11-13T01:30:00+00:00",
+    "BTCUSD": "2026-11-13T01:30:00+00:00",
+    "ETHUSD": "2026-11-13T01:30:00+00:00",
+    "SOLUSD": "2026-11-13T01:30:00+00:00"
   }
 }
