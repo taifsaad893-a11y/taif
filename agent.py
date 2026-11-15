@@ -13,11 +13,8 @@ from zoneinfo import ZoneInfo
 
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
-TWELVE_DATA_API_KEY = os.environ["TWELVE_DATA_API_KEY"]
 
 MARKETS = {
-    "XAUUSD": {"source": "twelve", "symbol": "XAU/USD", "weekdays_only": True},
-    "NASDAQ": {"source": "yahoo", "ticker": "NQ=F", "weekdays_only": True},
     "BTCUSD": {"source": "binance", "symbol": "BTCUSDT", "weekdays_only": False},
     "ETHUSD": {"source": "binance", "symbol": "ETHUSDT", "weekdays_only": False},
     "SOLUSD": {"source": "binance", "symbol": "SOLUSDT", "weekdays_only": False},
