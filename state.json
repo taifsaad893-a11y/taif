@@ -6,87 +6,8 @@
     "ETHUSD": "ETHUSD:BREAKOUT:S:2026-11-15T07:45:00+00:00",
     "BTCUSD": "BTCUSD:BREAKOUT:S:2026-11-15T07:45:00+00:00"
   },
-  "watch_setup": {
-    "BTCUSD": {
-      "id": "BTCUSD:BREAKOUT:S:2026-11-15T07:45:00+00:00",
-      "key": "BTCUSD",
-      "side": -1,
-      "setup_name": "Breakout",
-      "grade": "A",
-      "score": 8.5,
-      "plan": {
-        "entry": 63905.9,
-        "zone_low": 63894.22571428571,
-        "zone_high": 63940.92285714286,
-        "stop": 64260.95714285714,
-        "tps": [
-          63318.2,
-          62000.0,
-          62840.728571428575
-        ],
-        "risk": 355.057142857142,
-        "atr15": 291.8571428571413,
-        "retest_confirm_buffer": 14.592857142857065,
-        "structure_based": true,
-        "stop_structure": 64173.4
-      },
-      "confirmation_end": "2026-11-15T07:45:00+00:00",
-      "created_at": "2026-11-15T07:45:14.556290+00:00",
-      "expires_at": "2026-11-15T08:45:00+00:00",
-      "touched": false,
-      "touch_time": null
-    }
-  },
-  "active_trade": {
-    "ETHUSD": {
-      "id": "ETHUSD:BREAKOUT:S:2026-11-15T07:45:00+00:00",
-      "side": -1,
-      "setup": "Breakout",
-      "entry_type": "DIRECT",
-      "entry": 1778.58,
-      "stop": 1786.7797142857144,
-      "initial_stop": 1786.7797142857144,
-      "tps": [
-        1751.05,
-        1735.32,
-        1728.84
-      ],
-      "hits": [
-        false,
-        false,
-        false
-      ],
-      "opened_at": "2026-11-15T07:45:17.352182+00:00",
-      "last_tracking_bar": null,
-      "tracking_version": 2,
-      "tracking_initialized_at": "2026-11-15T07:45:17.352182+00:00",
-      "state": "OPEN"
-    },
-    "SOLUSD": {
-      "id": "SOLUSD:BREAKOUT:S:2026-11-15T07:45:00+00:00",
-      "side": -1,
-      "setup": "Breakout",
-      "entry_type": "DIRECT",
-      "entry": 69.73,
-      "stop": 70.19335714285714,
-      "initial_stop": 70.19335714285714,
-      "tps": [
-        68.84,
-        68.8,
-        67.38
-      ],
-      "hits": [
-        false,
-        false,
-        false
-      ],
-      "opened_at": "2026-11-15T07:45:19.610986+00:00",
-      "last_tracking_bar": null,
-      "tracking_version": 2,
-      "tracking_initialized_at": "2026-11-15T07:45:19.610986+00:00",
-      "state": "OPEN"
-    }
-  },
+  "watch_setup": {},
+  "active_trade": {},
   "closed": [
     {
       "id": "XAUUSD:BREAKOUT:S:2026-10-27T00:00:00+00:00",
@@ -2436,6 +2357,60 @@
       "exit_reason": "STOP",
       "exit_price": 4088.955279642857,
       "closed_at": "2026-11-09T07:48:00+00:00"
+    },
+    {
+      "id": "ETHUSD:BREAKOUT:S:2026-11-15T07:45:00+00:00",
+      "side": -1,
+      "setup": "Breakout",
+      "entry_type": "DIRECT",
+      "entry": 1778.58,
+      "stop": 1786.7797142857144,
+      "initial_stop": 1786.7797142857144,
+      "tps": [
+        1751.05,
+        1735.32,
+        1728.84
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-11-15T07:45:17.352182+00:00",
+      "last_tracking_bar": "2026-11-15T08:04:00+00:00",
+      "tracking_version": 2,
+      "tracking_initialized_at": "2026-11-15T07:45:17.352182+00:00",
+      "state": "CLOSED",
+      "exit_reason": "STOP",
+      "exit_price": 1786.7797142857144,
+      "closed_at": "2026-11-15T08:06:00+00:00"
+    },
+    {
+      "id": "SOLUSD:BREAKOUT:S:2026-11-15T07:45:00+00:00",
+      "side": -1,
+      "setup": "Breakout",
+      "entry_type": "DIRECT",
+      "entry": 69.73,
+      "stop": 70.19335714285714,
+      "initial_stop": 70.19335714285714,
+      "tps": [
+        68.84,
+        68.8,
+        67.38
+      ],
+      "hits": [
+        false,
+        false,
+        false
+      ],
+      "opened_at": "2026-11-15T07:45:19.610986+00:00",
+      "last_tracking_bar": "2026-11-15T08:20:00+00:00",
+      "tracking_version": 2,
+      "tracking_initialized_at": "2026-11-15T07:45:19.610986+00:00",
+      "state": "CLOSED",
+      "exit_reason": "STOP",
+      "exit_price": 70.19335714285714,
+      "closed_at": "2026-11-15T08:22:00+00:00"
     }
   ],
   "last_analysis_slot": {
