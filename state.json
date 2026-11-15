@@ -4,35 +4,35 @@
     "NASDAQ": "NASDAQ:SWEEP:L:2026-11-13T08:45:00+00:00",
     "SOLUSD": "SOLUSD:SWEEP:S:2026-11-15T20:00:00+00:00",
     "ETHUSD": "ETHUSD:BREAKOUT:S:2026-11-15T07:45:00+00:00",
-    "BTCUSD": "BTCUSD:BREAKOUT:S:2026-11-15T07:45:00+00:00"
+    "BTCUSD": "BTCUSD:SWEEP:S:2026-11-15T22:00:00+00:00"
   },
   "watch_setup": {
-    "SOLUSD": {
-      "id": "SOLUSD:SWEEP:S:2026-11-15T20:00:00+00:00",
-      "key": "SOLUSD",
+    "BTCUSD": {
+      "id": "BTCUSD:SWEEP:S:2026-11-15T22:00:00+00:00",
+      "key": "BTCUSD",
       "side": -1,
       "setup_name": "Liquidity High Sweep",
-      "grade": "B",
-      "score": 6.1,
+      "grade": "A",
+      "score": 7.8,
       "plan": {
-        "entry": 71.71,
-        "zone_low": 71.69291428571428,
-        "zone_high": 71.76125714285713,
-        "stop": 72.05814285714287,
+        "entry": 65020.9,
+        "zone_low": 65012.43885714286,
+        "zone_high": 65046.28342857143,
+        "stop": 65275.15857142857,
         "tps": [
-          71.01,
-          70.99,
-          70.05
+          64441.9,
+          64394.0,
+          64253.2
         ],
-        "risk": 0.3481428571428751,
-        "atr15": 0.42714285714285843,
-        "retest_confirm_buffer": 0.02135714285714292,
+        "risk": 254.25857142856694,
+        "atr15": 211.5285714285705,
+        "retest_confirm_buffer": 10.576428571428526,
         "structure_based": true,
-        "stop_structure": 71.93
+        "stop_structure": 65211.7
       },
-      "confirmation_end": "2026-11-15T20:00:00+00:00",
-      "created_at": "2026-11-15T20:24:46.242514+00:00",
-      "expires_at": "2026-11-15T21:00:00+00:00",
+      "confirmation_end": "2026-11-15T22:00:00+00:00",
+      "created_at": "2026-11-15T22:04:59.679948+00:00",
+      "expires_at": "2026-11-15T23:00:00+00:00",
       "touched": false,
       "touch_time": null
     }
@@ -2446,8 +2446,8 @@
   "last_analysis_slot": {
     "XAUUSD": "2026-11-13T22:30:00+00:00",
     "NASDAQ": "2026-11-13T08:45:00+00:00",
-    "BTCUSD": "2026-11-15T20:15:00+00:00",
-    "ETHUSD": "2026-11-15T20:15:00+00:00",
+    "BTCUSD": "2026-11-15T22:00:00+00:00",
+    "ETHUSD": "2026-11-15T22:00:00+00:00",
     "SOLUSD": "2026-11-15T20:15:00+00:00"
   }
 }
