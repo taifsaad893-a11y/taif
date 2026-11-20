@@ -4,66 +4,7 @@
     "ETHUSD": "ETHUSD:BREAKOUT:S:2026-11-19T21:30:00+00:00",
     "BTCUSD": "BTCUSD:BREAKOUT:L:2026-11-19T04:15:00+00:00"
   },
-  "watch_setup": {
-    "ETHUSD": {
-      "id": "ETHUSD:BREAKOUT:S:2026-11-19T21:30:00+00:00",
-      "key": "ETHUSD",
-      "side": -1,
-      "setup_name": "Breakout",
-      "grade": "A",
-      "score": 8.9,
-      "plan": {
-        "entry": 1745.46,
-        "zone_low": 1745.0375142857142,
-        "zone_high": 1746.7274571428572,
-        "stop": 1753.848642857143,
-        "tps": [
-          1732.85,
-          1711.0,
-          1720.2940714285712
-        ],
-        "risk": 8.38864285714294,
-        "atr15": 10.562142857142865,
-        "retest_confirm_buffer": 0.5281071428571432,
-        "structure_based": true,
-        "stop_structure": 1750.68
-      },
-      "confirmation_end": "2026-11-19T21:30:00+00:00",
-      "created_at": "2026-11-19T22:05:30.426615+00:00",
-      "expires_at": "2026-11-19T22:30:00+00:00",
-      "touched": false,
-      "touch_time": null
-    },
-    "SOLUSD": {
-      "id": "SOLUSD:BREAKOUT:S:2026-11-19T21:30:00+00:00",
-      "key": "SOLUSD",
-      "side": -1,
-      "setup_name": "Breakout",
-      "grade": "A",
-      "score": 7.7,
-      "plan": {
-        "entry": 72.52,
-        "zone_low": 72.5024,
-        "zone_high": 72.5728,
-        "stop": 72.962,
-        "tps": [
-          71.16,
-          71.05,
-          70.99
-        ],
-        "risk": 0.4420000000000073,
-        "atr15": 0.4400000000000008,
-        "retest_confirm_buffer": 0.02200000000000004,
-        "structure_based": true,
-        "stop_structure": 72.83
-      },
-      "confirmation_end": "2026-11-19T21:30:00+00:00",
-      "created_at": "2026-11-19T22:05:33.033491+00:00",
-      "expires_at": "2026-11-19T22:30:00+00:00",
-      "touched": false,
-      "touch_time": null
-    }
-  },
+  "watch_setup": {},
   "active_trade": {},
   "closed": [
     {
@@ -2471,7 +2412,7 @@
     }
   ],
   "last_analysis_slot": {
-    "BTCUSD": "2026-11-19T22:00:00+00:00",
+    "BTCUSD": "2026-11-20T03:15:00+00:00",
     "ETHUSD": "2026-11-19T22:00:00+00:00",
     "SOLUSD": "2026-11-19T22:00:00+00:00"
   }
