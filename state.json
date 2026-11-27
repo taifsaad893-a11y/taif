@@ -1,10 +1,69 @@
 {
   "last_signal": {
-    "SOLUSD": "SOLUSD:BREAKOUT:S:2026-11-26T15:15:00+00:00",
+    "SOLUSD": "SOLUSD:SWEEP:S:2026-11-27T08:30:00+00:00",
     "ETHUSD": "ETHUSD:BREAKOUT:S:2026-11-26T15:15:00+00:00",
-    "BTCUSD": "BTCUSD:BREAKOUT:S:2026-11-26T15:15:00+00:00"
+    "BTCUSD": "BTCUSD:SWEEP:S:2026-11-27T08:30:00+00:00"
   },
-  "watch_setup": {},
+  "watch_setup": {
+    "BTCUSD": {
+      "id": "BTCUSD:SWEEP:S:2026-11-27T08:30:00+00:00",
+      "key": "BTCUSD",
+      "side": -1,
+      "setup_name": "Liquidity High Sweep",
+      "grade": "B",
+      "score": 6.4,
+      "plan": {
+        "entry": 61849.2,
+        "zone_low": 61839.123999999996,
+        "zone_high": 61879.428,
+        "stop": 62121.67,
+        "tps": [
+          61407.8,
+          61293.8,
+          60764.2
+        ],
+        "risk": 272.47000000000116,
+        "atr15": 251.90000000000094,
+        "retest_confirm_buffer": 12.595000000000049,
+        "structure_based": true,
+        "stop_structure": 62046.1
+      },
+      "confirmation_end": "2026-11-27T08:30:00+00:00",
+      "created_at": "2026-11-27T08:41:13.442680+00:00",
+      "expires_at": "2026-11-27T09:30:00+00:00",
+      "touched": false,
+      "touch_time": null
+    },
+    "SOLUSD": {
+      "id": "SOLUSD:SWEEP:S:2026-11-27T08:30:00+00:00",
+      "key": "SOLUSD",
+      "side": -1,
+      "setup_name": "Liquidity High Sweep",
+      "grade": "B",
+      "score": 6.0,
+      "plan": {
+        "entry": 73.29,
+        "zone_low": 73.27677142857144,
+        "zone_high": 73.32968571428572,
+        "stop": 73.64921428571428,
+        "tps": [
+          72.67,
+          72.51,
+          71.83
+        ],
+        "risk": 0.3592142857142733,
+        "atr15": 0.33071428571428435,
+        "retest_confirm_buffer": 0.01653571428571422,
+        "structure_based": true,
+        "stop_structure": 73.55
+      },
+      "confirmation_end": "2026-11-27T08:30:00+00:00",
+      "created_at": "2026-11-27T08:41:17.468792+00:00",
+      "expires_at": "2026-11-27T09:30:00+00:00",
+      "touched": false,
+      "touch_time": null
+    }
+  },
   "active_trade": {},
   "closed": [
     {
@@ -2412,8 +2471,8 @@
     }
   ],
   "last_analysis_slot": {
-    "BTCUSD": "2026-11-26T15:30:00+00:00",
-    "ETHUSD": "2026-11-26T15:30:00+00:00",
-    "SOLUSD": "2026-11-26T15:30:00+00:00"
+    "BTCUSD": "2026-11-27T08:30:00+00:00",
+    "ETHUSD": "2026-11-27T08:30:00+00:00",
+    "SOLUSD": "2026-11-27T08:30:00+00:00"
   }
 }
